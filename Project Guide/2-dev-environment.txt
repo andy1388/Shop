@@ -1,0 +1,85 @@
+开发环境搭建详细说明
+================
+
+2.1 开发工具安装
+-------------
+2.1.1 VS Code 必要扩展：
+- ESLint
+- Prettier
+- GitLens
+- Error Lens
+- Path Intellisense
+- Auto Import
+- CSS Peek
+- Tailwind CSS IntelliSense
+
+2.1.2 其他工具：
+- Node.js (最新 LTS 版本)
+- Git
+- Chrome DevTools
+- Postman/Insomnia
+
+2.2 本地服务器设置
+--------------
+2.2.1 开发服务器配置：
+- 端口设置：3000
+- HTTPS 证书配置
+- 代理设置
+- 热重载配置
+
+2.2.2 调试工具配置：
+- Source Maps
+- React/Vue DevTools
+- 网络请求监控
+- 性能分析工具
+
+2.3 Netlify CLI 配置
+-----------------
+2.3.1 安装步骤：
+- npm install netlify-cli -g
+- netlify login
+- netlify init
+
+2.3.2 本地开发配置：
+- netlify dev
+- 环境变量同步
+- 函数测试
+- 表单处理测试
+
+2.4 环境变量设置
+-------------
+2.4.1 开发环境变量：
+- API 端点
+- 认证密钥
+- 第三方服务配置
+- 功能标记
+
+2.4.2 文件配置：
+- .env.development
+- .env.production
+- .env.local
+
+2.5 项目依赖确认
+-------------
+2.5.1 核心依赖：
+- 前端框架
+- 路由库
+- 状态管理
+- UI 组件库
+- 工具库
+
+2.5.2 开发依赖：
+- 类型定义
+- 测试工具
+- 代码格式化
+- 构建工具
+
+2.5.3 安全考虑：
+- 依赖版本检查
+- 漏洞扫描
+- 许可证检查
+
+注意事项：
+- 定期更新依赖
+- 记录依赖用途
+- 控制依赖数量 

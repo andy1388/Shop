@@ -1,0 +1,175 @@
+网店项目结构说明
+==============
+
+目录结构
+-------
+/shop-project
+├── assets/                 # 静态资源
+│   ├── images/            # 图片资源
+│   │   ├── products/     # 商品图片
+│   │   ├── banners/      # 轮播图
+│   │   └── icons/        # 图标
+│   ├── fonts/            # 字体文件
+│   └── videos/           # 视频资源
+│
+├── styles/                # 样式文件
+│   ├── base/             # 基础样式
+│   │   ├── reset.css
+│   │   ├── variables.css
+│   │   └── typography.css
+│   ├── components/       # 组件样式
+│   │   ├── header.css
+│   │   ├── footer.css
+│   │   └── product-card.css
+│   ├── layouts/          # 布局样式
+│   └── main.css          # 主样式文件
+│
+├── scripts/              # JavaScript文件
+│   ├── utils/           # 工具函数
+│   │   ├── api.js
+│   │   └── helpers.js
+│   ├── components/      # 组件脚本
+│   └── main.js
+│
+├── components/           # HTML组件
+│   ├── header/
+│   │   ├── header.html
+│   │   └── header.css
+│   ├── footer/
+│   └── common/
+│
+├── pages/               # 页面文件
+│   ├── index.html      # 首页
+│   ├── products/       # 商品相关页面
+│   │   ├── list.html
+│   │   └── detail.html
+│   ├── cart/          # 购物车
+│   ├── user/          # 用户中心
+│   └── about/         # 关于我们
+│
+└── docs/              # 文档
+
+命名规范
+-------
+1. 文件命名规则
+   - HTML文件：kebab-case (product-list.html)
+   - CSS文件：kebab-case (product-card.css)
+   - JS文件：camelCase (productHandler.js)
+   - 图片文件：kebab-case (hero-banner.jpg)
+
+2. CSS类名规范 (BEM方法论)
+   - 块：.block
+   - 元素：.block__element
+   - 修饰符：.block--modifier
+   - 例：.product-card__title--large
+
+3. JavaScript规范
+   - 变量：camelCase (productPrice)
+   - 常量：UPPER_SNAKE_CASE (MAX_PRICE)
+   - 类：PascalCase (ProductCard)
+   - 函数：camelCase (calculateTotal)
+
+4. 组件命名
+   - 组件文件夹：kebab-case
+   - 组件主文件：与文件夹同名
+   例：
+   /product-card/
+   ├── product-card.html
+   ├── product-card.css
+   └── product-card.js
+
+版本控制
+-------
+.gitignore 配置：
+- node_modules/
+- .DS_Store
+- .env
+- dist/
+- build/
+- *.log
+
+开发注意事项
+----------
+1. 组件化原则
+   - 保持组件的独立性
+   - 避免组件间强耦合
+   - 合理使用继承和组合
+
+2. 资源管理
+   - 图片使用适当的格式和大小
+   - 及时删除未使用的资源
+   - 保持资源文件命名的一致性
+
+3. 代码组织
+   - 相关文件放在一起
+   - 保持目录结构清晰
+   - 避免过深的目录嵌套 
+
+Netlify 配置与集成
+---------------
+1. 表单处理
+   /forms/
+   ├── contact-form/
+   │   └── index.html    # 带有 netlify 属性的表单
+   └── newsletter/
+       └── index.html    # 订阅表单
+
+2. 表单配置
+   - 添加 data-netlify="true"
+   - 添加 name 属性
+   - 配置表单提交后的重定向
+
+3. 环境变量
+   .env 文件配置：
+   - NETLIFY_FORMS_API_KEY
+   - SITE_URL
+   - API_ENDPOINT
+
+4. Functions 目录
+   /netlify/functions/   # Serverless 函数
+   ├── form-handler/     # 表单处理函数
+   ├── auth/            # 认证相关函数
+   └── api/             # API 端点
+
+5. 重定向配置
+   netlify.toml:
+   ```toml
+   [[redirects]]
+     from = "/api/*"
+     to = "/.netlify/functions/:splat"
+     status = 200
+   ```
+
+6. 表单示例
+   ```html
+   <form name="contact" method="POST" data-netlify="true">
+     <input type="hidden" name="form-name" value="contact" />
+     <!-- 表单字段 -->
+   </form>
+   ```
+
+7. 数据收集类型
+   - 联系表单
+   - 订阅注册
+   - 用户反馈
+   - 商品询价
+   - 预订系统
+
+8. 安全考虑
+   - 表单验证
+   - reCAPTCHA 集成
+   - 数据加密
+   - 访问控制
+
+9. 数据处理流程
+   - 表单提交
+   - 数据验证
+   - 邮件通知
+   - 数据存储
+   - 响应处理
+
+10. 监控与分析
+    - 表单提交统计
+    - 错误日志
+    - 用户行为分析
+    - 性能监控 
