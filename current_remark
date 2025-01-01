@@ -1,7 +1,7 @@
 0. You have all the right to access the files in the project.
 
 1. Check the current working phrase. And to do the the detail txt for that phrase.
-    1-project-init.txt ✓
+    1-project-init.txt - 当前在1.2 Git仓库初始化
     2-dev-environment.txt ✓
     3-architecture.txt ✓
     4-components.txt ✓
@@ -19,27 +19,30 @@
 3. Answer the following questions:
 ====================================================
     A. Current working phrase:
-    已完成所有12个阶段的详细说明文档编写
+    1.2 Git仓库初始化 - 设置项目的版本控制系统
 
     B. What have you done in this step?
-    - 创建了完整的12个阶段的详细工作文档
-    - 每个文档都包含了清晰的层级结构（x.x.x格式）
-    - 为每个阶段提供了具体的任务项和注意事项
-    - 确保了文档之间的连贯性和完整性
+    - 完成了12个阶段的详细文档编写
+    - 准备开始实际的项目初始化工作
+    - 即将执行Git仓库的初始化步骤
 
     C. What are you going to do next?
-    1. 创建 project-structure.txt，定义项目的具体目录结构
-    2. 根据各阶段文档，细化具体的实施计划
-    3. 建立具体的时间线和里程碑
-    4. 准备开始第一阶段的实际工作
+    1. 执行Git初始化步骤：
+       - git init
+       - 创建并切换到main分支
+       - 创建develop分支
+       - 配置远程仓库
+       - 进行首次提交
+    2. 确保.gitignore文件正确配置
+    3. 准备基础的README.md文件
 
-    D. Write your remark for the next step(any thing you have tried and failed):
+    D. Write your remark for the next step:
     注意事项：
-    1. 需要确保 project-structure.txt 与现有的12个阶段文档保持一致
-    2. 建议在开始实际开发前，先进行团队评审
-    3. 可能需要根据实际情况调整某些阶段的具体内容
-    4. 建议建立文档版本控制机制
-    5. 考虑创建一个简单的原型验证技术选型
+    1. 确保Git配置正确（用户名和邮箱）
+    2. .gitignore需要包含所有必要的排除项
+    3. 首次提交前检查文件状态
+    4. 记录所有Git操作步骤
+    5. 确保远程仓库已创建并可访问
 
 ====================================================
 
