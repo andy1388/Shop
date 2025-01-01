@@ -1,7 +1,7 @@
 0. You have all the right to access the files in the project.
 
 1. Check the current working phrase. And to do the the detail txt for that phrase.
-    1-project-init.txt - 当前在1.2 Git仓库初始化
+    1-project-init.txt - 当前在1.4 项目基础结构
     2-dev-environment.txt ✓
     3-architecture.txt ✓
     4-components.txt ✓
@@ -16,33 +16,44 @@
 
 2. See if there is any big structure you have to make in project-structure.txt.
 
+3. Check if there is existing file in the project before creating new file.
+
 3. Answer the following questions:
 ====================================================
     A. Current working phrase:
-    1.2 Git仓库初始化 - 设置项目的版本控制系统
+    1.4 项目基础结构 - 创建基础组件和页面框架
 
     B. What have you done in this step?
-    - 完成了12个阶段的详细文档编写
-    - 准备开始实际的项目初始化工作
-    - 即将执行Git仓库的初始化步骤
+    - 完成了项目初始化
+    - 配置了基础开发环境
+    - 创建了基础目录结构
+    - 设置了TypeScript和Tailwind CSS
+    - 项目可以正常启动运行
 
     C. What are you going to do next?
-    1. 执行Git初始化步骤：
-       - git init
-       - 创建并切换到main分支
-       - 创建develop分支
-       - 配置远程仓库
-       - 进行首次提交
-    2. 确保.gitignore文件正确配置
-    3. 准备基础的README.md文件
+    1. 创建基础组件结构：
+       - src/components/layout/
+         - Header.tsx
+         - Footer.tsx
+         - Sidebar.tsx
+       - src/components/common/
+         - Button.tsx
+         - Input.tsx
+         - Card.tsx
+    2. 创建基础页面结构：
+       - src/pages/
+         - Home.tsx
+         - Products.tsx
+         - About.tsx
+    3. 设置路由配置
 
     D. Write your remark for the next step:
     注意事项：
-    1. 确保Git配置正确（用户名和邮箱）
-    2. .gitignore需要包含所有必要的排除项
-    3. 首次提交前检查文件状态
-    4. 记录所有Git操作步骤
-    5. 确保远程仓库已创建并可访问
+    1. 遵循组件命名规范
+    2. 确保组件结构清晰
+    3. 实现基础样式和布局
+    4. 添加必要的类型定义
+    5. 保持代码可维护性
 
 ====================================================
 
