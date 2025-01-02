@@ -45,10 +45,18 @@ const mockLogin = async (credentials: LoginCredentials): Promise<User> => {
 // 创建异步action
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: LoginCredentials) => {
+  async (credentials: LoginCredentials & { rememberMe?: boolean }) => {
     const user = await mockLogin(credentials);
-    // 登录成功后设置 token
+    // 设置 token 和过期时间
+    const expiresIn = credentials.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30天或1天
+    const expiresAt = new Date().getTime() + expiresIn;
+    
     localStorage.setItem('token', 'valid-token');
+    localStorage.setItem('expiresAt', expiresAt.toString());
+    if (credentials.rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+    }
+    
     return user;
   }
 );
@@ -57,30 +65,43 @@ export const login = createAsyncThunk(
 export const checkSession = createAsyncThunk(
   'auth/checkSession',
   async () => {
-    // 检查本地存储的token
     const token = localStorage.getItem('token');
-    if (!token) {
-      // 不抛出错误，而是返回 null
+    const expiresAt = localStorage.getItem('expiresAt');
+    const rememberMe = localStorage.getItem('rememberMe');
+
+    if (!token || !expiresAt) {
       return null;
     }
-    
-    // 验证token有效性（这里使用模拟数据）
-    if (token === 'valid-token') {
-      return {
-        id: '1',
-        username: 'Test User',
-        email: 'test@example.com',
-        role: 'user',
-        preferences: {
-          theme: 'light',
-          language: 'zh-CN',
-          notifications: true,
-          currency: 'CNY',
-        },
-        createdAt: new Date().toISOString(),
-      } as User;
+
+    // 检查是否过期
+    if (new Date().getTime() > parseInt(expiresAt)) {
+      // 如果过期，清除所有存储
+      localStorage.removeItem('token');
+      localStorage.removeItem('expiresAt');
+      localStorage.removeItem('rememberMe');
+      return null;
     }
-    return null;
+
+    // 如果即将过期且设置了记住登录，则续期
+    const remainingTime = parseInt(expiresAt) - new Date().getTime();
+    if (rememberMe && remainingTime < 24 * 60 * 60 * 1000) {
+      const newExpiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
+      localStorage.setItem('expiresAt', newExpiresAt.toString());
+    }
+
+    return {
+      id: '1',
+      username: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      preferences: {
+        theme: 'light',
+        language: 'zh-CN',
+        notifications: true,
+        currency: 'CNY',
+      },
+      createdAt: new Date().toISOString(),
+    } as User;
   }
 );
 
@@ -127,12 +148,14 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  rememberMe: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  rememberMe: false,
 };
 
 const authSlice = createSlice({
@@ -143,6 +166,8 @@ const authSlice = createSlice({
       state.user = null;
       state.error = null;
       localStorage.removeItem('token');
+      localStorage.removeItem('expiresAt');
+      localStorage.removeItem('rememberMe');
     },
     setPreferences: (state, action: PayloadAction<UserPreferences>) => {
       if (state.user) {

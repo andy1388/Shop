@@ -65,20 +65,18 @@ const Login = () => {
     e.preventDefault();
     setAttempted(true);
 
-    // 立即进行表单验证
     const formErrors = {
       email: validateEmail(formData.email),
       password: validatePassword(formData.password),
     };
     setErrors(formErrors);
 
-    // 如果有任何错误，阻止提交
     if (Object.values(formErrors).some(error => error !== null)) {
       return;
     }
 
     try {
-      await dispatch(login(formData)).unwrap();
+      await dispatch(login({ ...formData, rememberMe })).unwrap();
       navigate('/');
     } catch (err) {
       console.error('Login failed:', err);
@@ -110,7 +108,7 @@ const Login = () => {
               onChange={handleChange}
               onBlur={() => handleBlur('password')}
               error={attempted ? errors.password : null}
-              showStrength={true}
+              showStrength={false}
             />
           </div>
 
