@@ -102,6 +102,13 @@ const generateMockProducts = (count: number): Product[] => {
           ['免運費', '特價'],
         ];
 
+        // 生成多张随机图片
+        const generateImages = (count: number) => {
+          return Array.from({ length: Math.floor(Math.random() * 3) + 2 }, // 2-4张图片
+            (_, index) => `https://picsum.photos/400/400?random=${Math.random()}`
+          );
+        };
+
         products.push({
           id: products.length.toString(),
           name,
@@ -110,7 +117,7 @@ const generateMockProducts = (count: number): Product[] => {
           description: '商品描述信息',
           price,
           originalPrice: Math.floor(price * (1 + Math.random() * 0.5)),
-          images: [`https://picsum.photos/400/400?random=${products.length + 1}`],
+          images: generateImages(Math.floor(Math.random() * 3) + 2), // 使用新的图片生成函数
           tags: possibleTags[Math.floor(Math.random() * possibleTags.length)],
           stock: Math.floor(Math.random() * 100 + 10),
           rating: Number((Math.random() * 2 + 3).toFixed(1)),

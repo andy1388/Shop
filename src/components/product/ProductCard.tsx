@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/outline';
 
 interface ProductCardProps {
@@ -13,6 +13,18 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggleFavorite }) => {
   const { id, name, price, originalPrice, images, rating, reviews } = product;
   const [isFavorite, setIsFavorite] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // 处理图片切换
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
 
   // 格式化价格显示
   const formatPrice = (value: number) => {
@@ -24,11 +36,50 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
       <div className="relative">
         <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200">
           <img
-            src={images[0]}
+            src={images[currentImageIndex]}
             alt={name}
-            className="h-full w-full object-cover object-center group-hover:opacity-75"
+            className="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity duration-300"
             loading="lazy"
           />
+          
+          {/* 图片切换按钮 */}
+          {images.length > 1 && (
+            <>
+              <button
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full 
+                           bg-black/30 text-white opacity-0 group-hover:opacity-100
+                           transition-opacity duration-200 hover:bg-black/50"
+                onClick={handlePrevImage}
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+              </button>
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full 
+                           bg-black/30 text-white opacity-0 group-hover:opacity-100
+                           transition-opacity duration-200 hover:bg-black/50"
+                onClick={handleNextImage}
+              >
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+
+              {/* 图片指示器 */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200
+                              ${index === currentImageIndex 
+                                ? 'bg-white' 
+                                : 'bg-white/50 hover:bg-white/75'}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentImageIndex(index);
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
           {product.tags.map((tag, index) => (
