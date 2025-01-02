@@ -55,13 +55,15 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
   };
 
   // 处理分类变化
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = useCallback((category: string) => {
+    console.log('handleCategoryChange called with:', category);
+    
     // 如果点击当前选中的分类，则清除所有分类筛选
     if (filters.category === category) {
       onFilterChange({
         ...filters,
         category: undefined,
-        subCategory: undefined, // 清除子分类
+        subCategory: undefined,
       });
     } else {
       // 选择新分类时，清除子分类
@@ -71,10 +73,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
         subCategory: undefined,
       });
     }
-  };
+  }, [filters, onFilterChange]);
 
   // 处理子分类变化
   const handleSubCategoryChange = (subCategory: string) => {
+    console.log('Changing subcategory to:', subCategory);
     onFilterChange({
       ...filters,
       subCategory: filters.subCategory === subCategory ? undefined : subCategory,

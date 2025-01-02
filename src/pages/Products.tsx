@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ProductCard from '../components/product/ProductCard';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductLayoutSwitch, { GridLayout } from '../components/product/ProductLayoutSwitch';
@@ -27,64 +27,81 @@ const Products = () => {
 
   console.log('Filters:', filters); // 添加调试日志
 
+  // 统一的筛选逻辑
+  const getFilteredProducts = (products: Product[], filters: Filters) => {
+    console.log('Current filters:', filters); // 添加调试日志
+
+    return products.filter((product) => {
+      // 添加调试日志
+      if (filters.category && filters.subCategory) {
+        console.log('Checking product:', {
+          product: product.name,
+          category: product.category,
+          subCategory: product.subCategory,
+          matchCategory: product.category === filters.category,
+          matchSubCategory: product.subCategory === filters.subCategory
+        });
+      }
+
+      // 价格筛选
+      if (filters.minPrice && product.price < filters.minPrice) {
+        return false;
+      }
+      if (filters.maxPrice && product.price > filters.maxPrice) {
+        return false;
+      }
+
+      // 分类筛选 - 修改筛选逻辑
+      if (filters.subCategory) {
+        // 如果有子分类，只检查子分类匹配
+        return product.subCategory === filters.subCategory;
+      }
+      if (filters.category) {
+        // 如果只有主分类，则检查主分类匹配
+        return product.category === filters.category;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      if (filters.sort) {
+        switch (filters.sort) {
+          case 'price-asc':
+            return a.price - b.price;
+          case 'price-desc':
+            return b.price - a.price;
+          case 'rating-desc':
+            return b.rating - a.rating;
+          case 'newest':
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          default:
+            return 0;
+        }
+      }
+      return 0;
+    });
+  };
+
+  // 使用统一的筛选逻辑
+  const filteredProducts = useMemo(() => {
+    return getFilteredProducts(mockProducts, filters);
+  }, [filters]);
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setProductsLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // 应用筛选条件
-        let filteredProducts = [...mockProducts];
-
-        // 价格筛选
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-          filteredProducts = filteredProducts.filter(product => {
-            const price = product.price;
-            if (filters.minPrice !== undefined && filters.maxPrice !== undefined) {
-              return price >= filters.minPrice && price <= filters.maxPrice;
-            }
-            if (filters.minPrice !== undefined) {
-              return price >= filters.minPrice;
-            }
-            if (filters.maxPrice !== undefined) {
-              return price <= filters.maxPrice;
-            }
-            return true;
-          });
-        }
-
-        // 分类筛选
-        if (filters.category) {
-          filteredProducts = filteredProducts.filter(
-            product => product.category === filters.category
-          );
-        }
-
-        // 排序
-        if (filters.sort) {
-          filteredProducts.sort((a, b) => {
-            switch (filters.sort) {
-              case 'price-asc':
-                return a.price - b.price;
-              case 'price-desc':
-                return b.price - a.price;
-              case 'rating-desc':
-                return b.rating - a.rating;
-              case 'newest':
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              default:
-                return 0;
-            }
-          });
-        }
-
+        // 使用统一的筛选逻辑
+        const filtered = getFilteredProducts(mockProducts, filters);
+        
         // 分页
-        const total = Math.ceil(filteredProducts.length / pageSize);
+        const total = Math.ceil(filtered.length / pageSize);
         setTotalPages(total);
         
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        setProducts(filteredProducts.slice(start, end));
+        setProducts(filtered.slice(start, end));
         
         setError(null);
       } catch (err) {
@@ -96,6 +113,11 @@ const Products = () => {
 
     fetchProducts();
   }, [filters, currentPage, pageSize]);
+
+  // 在组件中添加调试日志
+  useEffect(() => {
+    console.log('Filters changed:', filters);
+  }, [filters]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
