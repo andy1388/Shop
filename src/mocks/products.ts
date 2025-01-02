@@ -95,6 +95,13 @@ const generateMockProducts = (count: number): Product[] => {
           }
         }
         
+        const possibleTags = [
+          ['新品', '限時優惠'],
+          ['熱賣', '折扣'],
+          ['推薦', '限量'],
+          ['免運費', '特價'],
+        ];
+
         products.push({
           id: products.length.toString(),
           name,
@@ -104,7 +111,7 @@ const generateMockProducts = (count: number): Product[] => {
           price,
           originalPrice: Math.floor(price * (1 + Math.random() * 0.5)),
           images: [`https://picsum.photos/400/400?random=${products.length + 1}`],
-          tags: ['新品', '熱銷', '推薦'][Math.floor(Math.random() * 3)].split(''),
+          tags: possibleTags[Math.floor(Math.random() * possibleTags.length)],
           stock: Math.floor(Math.random() * 100 + 10),
           rating: Number((Math.random() * 2 + 3).toFixed(1)),
           reviews: Math.floor(Math.random() * 200 + 1),

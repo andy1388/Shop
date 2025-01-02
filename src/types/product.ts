@@ -7,6 +7,7 @@ export interface Product {
   originalPrice?: number;
   images: string[];
   category: string;
+  subCategory: string;
   tags: string[];
   stock: number;
   rating: number;
