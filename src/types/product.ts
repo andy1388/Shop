@@ -4,13 +4,32 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number;
+  originalPrice?: number;
   images: string[];
   category: string;
   tags: string[];
-  status: 'in-stock' | 'out-of-stock' | 'discontinued';
+  stock: number;
+  rating: number;
+  reviews: number;
+  specifications: {
+    [key: string]: string;
+  };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductListResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ProductFilters {
+  minPrice?: number;
+  maxPrice?: number;
+  category?: string;
+  sort?: 'newest' | 'price-asc' | 'price-desc' | 'rating-desc';
 }
 
 export interface Category {
