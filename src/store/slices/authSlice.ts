@@ -42,13 +42,22 @@ const mockLogin = async (credentials: LoginCredentials): Promise<User> => {
   throw new Error('Invalid credentials');
 };
 
+// 修改时间常量
+const TEST_MODE = false; // 改回正式模式
+const EXPIRES_IN = {
+  REMEMBER: 30 * 24 * 60 * 60 * 1000,  // 30天
+  NORMAL: 24 * 60 * 60 * 1000,         // 24小时
+  RENEW_THRESHOLD: 10 * 24 * 60 * 60 * 1000  // 10天（新增）
+};
+
 // 创建异步action
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials & { rememberMe?: boolean }) => {
     const user = await mockLogin(credentials);
-    // 设置 token 和过期时间
-    const expiresIn = credentials.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30天或1天
+    
+    // 使用测试时间
+    const expiresIn = credentials.rememberMe ? EXPIRES_IN.REMEMBER : EXPIRES_IN.NORMAL;
     const expiresAt = new Date().getTime() + expiresIn;
     
     localStorage.setItem('token', 'valid-token');
@@ -61,7 +70,7 @@ export const login = createAsyncThunk(
   }
 );
 
-// 修改会话检查
+// 修改会话检查，添加过期时间提示
 export const checkSession = createAsyncThunk(
   'auth/checkSession',
   async () => {
@@ -73,9 +82,18 @@ export const checkSession = createAsyncThunk(
       return null;
     }
 
+    const now = new Date().getTime();
+    const expireTime = parseInt(expiresAt);
+    
+    // 添加过期时间日志（方便测试）
+    if (TEST_MODE) {
+      const remainingTime = Math.max(0, (expireTime - now) / 1000);
+      console.log(`Session expires in: ${remainingTime.toFixed(0)} seconds`);
+    }
+
     // 检查是否过期
-    if (new Date().getTime() > parseInt(expiresAt)) {
-      // 如果过期，清除所有存储
+    if (now > expireTime) {
+      console.log('Session expired');
       localStorage.removeItem('token');
       localStorage.removeItem('expiresAt');
       localStorage.removeItem('rememberMe');
@@ -83,10 +101,12 @@ export const checkSession = createAsyncThunk(
     }
 
     // 如果即将过期且设置了记住登录，则续期
-    const remainingTime = parseInt(expiresAt) - new Date().getTime();
-    if (rememberMe && remainingTime < 24 * 60 * 60 * 1000) {
-      const newExpiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
+    const remainingTime = expireTime - now;
+    // 当剩余时间少于10天时续期
+    if (rememberMe && remainingTime < EXPIRES_IN.RENEW_THRESHOLD) {
+      const newExpiresAt = now + EXPIRES_IN.REMEMBER;
       localStorage.setItem('expiresAt', newExpiresAt.toString());
+      console.log('Session renewed with 30 days');
     }
 
     return {
