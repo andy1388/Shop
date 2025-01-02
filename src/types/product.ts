@@ -29,6 +29,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   category?: string;
+  subCategory?: string;
   sort?: 'newest' | 'price-asc' | 'price-desc' | 'rating-desc';
 }
 

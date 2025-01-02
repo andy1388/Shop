@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import debounce from 'lodash/debounce';
 import type { ProductFilters } from '../../types/product';
+import { productCategories } from '../../constants/categories';
 
 interface ProductFiltersProps {
   filters: ProductFilters;
@@ -10,24 +11,38 @@ interface ProductFiltersProps {
 const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange }) => {
   const [customMin, setCustomMin] = useState<string>('');
   const [customMax, setCustomMax] = useState<string>('');
-  const [localMaxPrice, setLocalMaxPrice] = useState<number>(filters.maxPrice || 5000);
+  const [localMinPrice, setLocalMinPrice] = useState<number>(filters.minPrice || 0);
+  const [localMaxPrice, setLocalMaxPrice] = useState<number>(filters.maxPrice || 3000);
+  const [priceError, setPriceError] = useState<string>('');
 
   // 使用防抖处理价格滑块变化
   const debouncedPriceChange = useCallback(
-    debounce((value: number) => {
+    debounce((min: number, max: number) => {
       onFilterChange({
         ...filters,
-        maxPrice: value === 5000 ? undefined : value,
+        minPrice: min === 0 ? undefined : min,
+        maxPrice: max === 3000 ? undefined : max,
       });
-    }, 500),  // 500ms 延迟
+    }, 500),
     [filters]
   );
 
-  // 处理滑块变化
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 处理最小价格滑块变化
+  const handleMinSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-    setLocalMaxPrice(value);  // 立即更新本地状态
-    debouncedPriceChange(value);  // 延迟更新筛选
+    if (value <= localMaxPrice) {
+      setLocalMinPrice(value);
+      debouncedPriceChange(value, localMaxPrice);
+    }
+  };
+
+  // 处理最大价格滑块变化
+  const handleMaxSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    if (value >= localMinPrice) {
+      setLocalMaxPrice(value);
+      debouncedPriceChange(localMinPrice, value);
+    }
   };
 
   // 处理价格范围变化
@@ -41,9 +56,28 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
 
   // 处理分类变化
   const handleCategoryChange = (category: string) => {
+    // 如果点击当前选中的分类，则清除所有分类筛选
+    if (filters.category === category) {
+      onFilterChange({
+        ...filters,
+        category: undefined,
+        subCategory: undefined, // 清除子分类
+      });
+    } else {
+      // 选择新分类时，清除子分类
+      onFilterChange({
+        ...filters,
+        category,
+        subCategory: undefined,
+      });
+    }
+  };
+
+  // 处理子分类变化
+  const handleSubCategoryChange = (subCategory: string) => {
     onFilterChange({
       ...filters,
-      category: filters.category === category ? undefined : category,
+      subCategory: filters.subCategory === subCategory ? undefined : subCategory,
     });
   };
 
@@ -61,25 +95,32 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
     const max = customMax ? Number(customMax) : undefined;
     
     if ((min !== undefined && min < 0) || (max !== undefined && max < 0)) {
-      return; // 不允许负数
+      setPriceError('價格不能為負數');
+      return;
     }
     
     if (min !== undefined && max !== undefined && min > max) {
-      return; // 最小值不能大于最大值
+      setPriceError('最低價不能大於最高價');
+      return;
     }
 
+    setPriceError('');
     onFilterChange({
       ...filters,
       minPrice: min,
       maxPrice: max,
     });
+    
+    // 清空输入框
+    setCustomMin('');
+    setCustomMax('');
   };
 
   return (
     <div className="bg-white sticky top-4">
       {/* 价格区间 */}
       <div className="border-b border-gray-200 py-6">
-        <h3 className="text-sm font-medium text-gray-900">价格区间</h3>
+        <h3 className="text-sm font-medium text-gray-900">價格區間</h3>
         <div className="mt-4 space-y-4">
           <button
             className={`w-full text-left px-4 py-2 rounded ${
@@ -118,14 +159,14 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
             HK$1000以上
           </button>
 
-          {/* 添加自定义价格范围 */}
+          {/* 自定义价格范围 */}
           <div className="mt-6 space-y-4">
             <div className="flex items-center space-x-2">
               <input
                 type="number"
                 value={customMin}
                 onChange={(e) => setCustomMin(e.target.value)}
-                placeholder="最低价"
+                placeholder="最低價"
                 className="w-24 px-2 py-1 border rounded text-sm"
                 min="0"
               />
@@ -134,7 +175,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
                 type="number"
                 value={customMax}
                 onChange={(e) => setCustomMax(e.target.value)}
-                placeholder="最高价"
+                placeholder="最高價"
                 className="w-24 px-2 py-1 border rounded text-sm"
                 min="0"
               />
@@ -143,26 +184,92 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
               onClick={handleCustomPriceChange}
               className="w-full px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
             >
-              应用价格范围
+              應用價格範圍
             </button>
           </div>
 
           {/* 价格滑块 */}
-          <div className="mt-6">
-            <input
-              type="range"
-              min="0"
-              max="5000"
-              step="100"
-              value={localMaxPrice}
-              onChange={handleSliderChange}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>HK$0</span>
-              <span>
-                {localMaxPrice === 5000 ? 'HK$5000+' : `HK$${localMaxPrice}`}
-              </span>
+          <div className="mt-6 px-2">
+            <div className="relative h-2">
+              {/* 滑块轨道背景 */}
+              <div className="absolute w-full h-full bg-gray-200 rounded pointer-events-none"></div>
+              
+              {/* 活动范围显示 */}
+              <div
+                className="absolute h-full bg-blue-500 rounded pointer-events-none"
+                style={{
+                  left: `${(localMinPrice / 3000) * 100}%`,
+                  right: `${100 - (localMaxPrice / 3000) * 100}%`,
+                }}
+              ></div>
+
+              {/* 最小价格滑块 */}
+              <input
+                type="range"
+                min="0"
+                max="3000"
+                step="50"
+                value={localMinPrice}
+                onChange={handleMinSliderChange}
+                className="absolute w-full h-full appearance-none bg-transparent pointer-events-none
+                  [&::-webkit-slider-thumb]:appearance-none 
+                  [&::-webkit-slider-thumb]:h-4 
+                  [&::-webkit-slider-thumb]:w-4 
+                  [&::-webkit-slider-thumb]:rounded-full 
+                  [&::-webkit-slider-thumb]:bg-white 
+                  [&::-webkit-slider-thumb]:border-2 
+                  [&::-webkit-slider-thumb]:border-blue-500 
+                  [&::-webkit-slider-thumb]:cursor-pointer
+                  [&::-webkit-slider-thumb]:shadow-md
+                  [&::-webkit-slider-thumb]:pointer-events-auto
+                  [&::-moz-range-thumb]:appearance-none 
+                  [&::-moz-range-thumb]:h-4 
+                  [&::-moz-range-thumb]:w-4 
+                  [&::-moz-range-thumb]:rounded-full 
+                  [&::-moz-range-thumb]:bg-white 
+                  [&::-moz-range-thumb]:border-2 
+                  [&::-moz-range-thumb]:border-blue-500 
+                  [&::-moz-range-thumb]:cursor-pointer
+                  [&::-moz-range-thumb]:shadow-md
+                  [&::-moz-range-thumb]:pointer-events-auto"
+              />
+
+              {/* 最大价格滑块 */}
+              <input
+                type="range"
+                min="0"
+                max="3000"
+                step="50"
+                value={localMaxPrice}
+                onChange={handleMaxSliderChange}
+                className="absolute w-full h-full appearance-none bg-transparent pointer-events-none
+                  [&::-webkit-slider-thumb]:appearance-none 
+                  [&::-webkit-slider-thumb]:h-4 
+                  [&::-webkit-slider-thumb]:w-4 
+                  [&::-webkit-slider-thumb]:rounded-full 
+                  [&::-webkit-slider-thumb]:bg-white 
+                  [&::-webkit-slider-thumb]:border-2 
+                  [&::-webkit-slider-thumb]:border-blue-500 
+                  [&::-webkit-slider-thumb]:cursor-pointer
+                  [&::-webkit-slider-thumb]:shadow-md
+                  [&::-webkit-slider-thumb]:pointer-events-auto
+                  [&::-moz-range-thumb]:appearance-none 
+                  [&::-moz-range-thumb]:h-4 
+                  [&::-moz-range-thumb]:w-4 
+                  [&::-moz-range-thumb]:rounded-full 
+                  [&::-moz-range-thumb]:bg-white 
+                  [&::-moz-range-thumb]:border-2 
+                  [&::-moz-range-thumb]:border-blue-500 
+                  [&::-moz-range-thumb]:cursor-pointer
+                  [&::-moz-range-thumb]:shadow-md
+                  [&::-moz-range-thumb]:pointer-events-auto"
+              />
+            </div>
+
+            {/* 价格范围显示 */}
+            <div className="flex justify-between text-xs text-gray-500 mt-4">
+              <span>HK${localMinPrice}</span>
+              <span>HK${localMaxPrice === 3000 ? '3000+' : localMaxPrice}</span>
             </div>
           </div>
         </div>
@@ -170,22 +277,40 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
 
       {/* 分类 */}
       <div className="border-b border-gray-200 py-6">
-        <h3 className="text-sm font-medium text-gray-900">分类</h3>
+        <h3 className="text-sm font-medium text-gray-900">分類</h3>
         <div className="mt-4 space-y-4">
-          {['shoes', 'bags', 'clothes'].map((category) => (
-            <button
-              key={category}
-              className={`w-full text-left px-4 py-2 rounded ${
-                filters.category === category
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'hover:bg-gray-50'
-              }`}
-              onClick={() => handleCategoryChange(category)}
-            >
-              {category === 'shoes' && '鞋类'}
-              {category === 'bags' && '箱包'}
-              {category === 'clothes' && '服装'}
-            </button>
+          {Object.values(productCategories).map((category) => (
+            <div key={category.id} className="space-y-2">
+              <button
+                className={`w-full text-left px-4 py-2 rounded font-medium ${
+                  filters.category === category.id
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => handleCategoryChange(category.id)}
+              >
+                {category.name}
+              </button>
+              
+              {/* 子分类列表 - 仅在主分类被选中时显示 */}
+              {filters.category === category.id && (
+                <div className="ml-4 space-y-2">
+                  {category.subcategories.map((sub) => (
+                    <button
+                      key={sub.id}
+                      className={`w-full text-left px-4 py-1 rounded text-sm ${
+                        filters.subCategory === sub.id
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleSubCategoryChange(sub.id)}
+                    >
+                      {sub.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -196,9 +321,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
         <div className="mt-4 space-y-4">
           {[
             { value: 'newest', label: '最新' },
-            { value: 'price-asc', label: '价格从低到高' },
-            { value: 'price-desc', label: '价格从高到低' },
-            { value: 'rating-desc', label: '评分最高' },
+            { value: 'price-asc', label: '價格從低到高' },
+            { value: 'price-desc', label: '價格從高到低' },
+            { value: 'rating-desc', label: '評分最高' },
           ].map((option) => (
             <button
               key={option.value}
@@ -214,6 +339,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ filters, onFilterChange
           ))}
         </div>
       </div>
+
+      {/* 错误信息 */}
+      {priceError && (
+        <p className="text-red-500 text-xs mt-1">{priceError}</p>
+      )}
     </div>
   );
 };
