@@ -38,39 +38,41 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
           <img
             src={images[currentImageIndex]}
             alt={name}
-            className="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity duration-300"
+            className="w-full h-full object-cover object-center 
+                       transition-all duration-300 ease-in-out transform
+                       group-hover:scale-105"
             loading="lazy"
           />
           
-          {/* 图片切换按钮 */}
+          {/* 图片切换按钮 - 只在有多张图片时显示 */}
           {images.length > 1 && (
             <>
               <button
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full 
-                           bg-black/30 text-white opacity-0 group-hover:opacity-100
-                           transition-opacity duration-200 hover:bg-black/50"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
+                           bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
+                           transition-opacity duration-200 hover:bg-white"
                 onClick={handlePrevImage}
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full 
-                           bg-black/30 text-white opacity-0 group-hover:opacity-100
-                           transition-opacity duration-200 hover:bg-black/50"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
+                           bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
+                           transition-opacity duration-200 hover:bg-white"
                 onClick={handleNextImage}
               >
                 <ChevronRightIcon className="w-5 h-5" />
               </button>
 
               {/* 图片指示器 */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200
+                    className={`w-2 h-2 rounded-full transition-all duration-200
                               ${index === currentImageIndex 
-                                ? 'bg-white' 
-                                : 'bg-white/50 hover:bg-white/75'}`}
+                                ? 'bg-white scale-110' 
+                                : 'bg-white/60 hover:bg-white/80'}`}
                     onClick={(e) => {
                       e.preventDefault();
                       setCurrentImageIndex(index);
