@@ -29,20 +29,7 @@ const Products = () => {
 
   // 统一的筛选逻辑
   const getFilteredProducts = (products: Product[], filters: Filters) => {
-    console.log('Current filters:', filters); // 添加调试日志
-
     return products.filter((product) => {
-      // 添加调试日志
-      if (filters.category && filters.subCategory) {
-        console.log('Checking product:', {
-          product: product.name,
-          category: product.category,
-          subCategory: product.subCategory,
-          matchCategory: product.category === filters.category,
-          matchSubCategory: product.subCategory === filters.subCategory
-        });
-      }
-
       // 价格筛选
       if (filters.minPrice && product.price < filters.minPrice) {
         return false;
@@ -51,13 +38,12 @@ const Products = () => {
         return false;
       }
 
-      // 分类筛选 - 修改筛选逻辑
-      if (filters.subCategory) {
-        // 如果有子分类，只检查子分类匹配
-        return product.subCategory === filters.subCategory;
-      }
+      // 分类筛选
       if (filters.category) {
-        // 如果只有主分类，则检查主分类匹配
+        if (filters.subCategory) {
+          return product.category === filters.category && 
+                 product.subCategory === filters.subCategory;
+        }
         return product.category === filters.category;
       }
 
