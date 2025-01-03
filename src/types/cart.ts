@@ -1,4 +1,5 @@
-// 购物车相关类型定义
+import type { Product } from './product';
+
 export interface CartItem {
   id: string;
   productId: string;
@@ -6,12 +7,14 @@ export interface CartItem {
   price: number;
   name: string;
   image: string;
+  specifications: {
+    顏色?: string;
+    尺碼?: string;
+  };
 }
 
 export interface Cart {
-  id: string;
-  userId: string;
   items: CartItem[];
   total: number;
-  updatedAt: string;
+  count: number;
 } 

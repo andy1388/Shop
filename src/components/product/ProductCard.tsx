@@ -3,39 +3,90 @@ import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
 import { ShoppingCartIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/outline';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart } from '../../store/slices/cartSlice';
+import ToastService from '../../services/ToastService';
+import { toggleFavorite } from '../../store/slices/favoriteSlice';
+import type { RootState } from '../../store';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
-  onToggleFavorite: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggleFavorite }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { id, name, price, originalPrice, images, rating, reviews } = product;
-  const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [nextImageIndex, setNextImageIndex] = useState<number | null>(null);
+  const dispatch = useDispatch();
+  const favorites = useSelector((state: RootState) => state.favorite.items);
+  const isFavorite = favorites.some(item => item.id === product.id);
 
   // 预加载所有图片
   React.useEffect(() => {
-    images.forEach(imageUrl => {
-      const img = new Image();
-      img.src = imageUrl;
-      img.onload = () => {
-        setLoadedImages(prev => new Set(prev).add(imageUrl));
-      };
+    let mounted = true;
+    const imagePromises = images.map(imageUrl => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = imageUrl;
+        img.onload = () => {
+          if (mounted) {
+            setLoadedImages(prev => new Set([...prev, imageUrl]));
+          }
+          resolve(imageUrl);
+        };
+        img.onerror = reject;
+      });
     });
+
+    Promise.all(imagePromises)
+      .then(() => {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      })
+      .catch(error => {
+        console.error('Error loading images:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [images]);
 
   // 处理图片切换
+  const handleImageChange = (newIndex: number) => {
+    if (loadedImages.has(images[newIndex])) {
+      setCurrentImageIndex(newIndex);
+      setNextImageIndex(null);
+    } else {
+      // 如果下一张图片还没加载完成，先记录目标索引
+      setNextImageIndex(newIndex);
+    }
+  };
+
+  // 监听图片加载状态
+  React.useEffect(() => {
+    if (nextImageIndex !== null && loadedImages.has(images[nextImageIndex])) {
+      setCurrentImageIndex(nextImageIndex);
+      setNextImageIndex(null);
+    }
+  }, [loadedImages, nextImageIndex, images]);
+
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    const newIndex = currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
+    handleImageChange(newIndex);
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    const newIndex = currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1;
+    handleImageChange(newIndex);
   };
 
   // 格式化价格显示
@@ -43,29 +94,47 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
     return `HK$${value.toFixed(2)}`;
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dispatch(addToCart({ product, quantity: 1 }));
+    ToastService.show('已添加到購物車');
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dispatch(toggleFavorite(product));
+    ToastService.show(
+      isFavorite ? '已從收藏中移除' : '已添加到收藏',
+      isFavorite ? 'error' : 'success'
+    );
+  };
+
   return (
     <Link to={`/products/${id}`} className="group relative block">
       <div className="relative">
         <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200">
           <div className="relative w-full h-full">
-            {loadedImages.has(images[currentImageIndex]) ? (
-              <img
-                key={currentImageIndex}
-                src={images[currentImageIndex]}
-                alt={name}
-                className="w-full h-full object-cover object-center transition-all duration-500 ease-in-out"
-                style={{
-                  animation: 'fadeIn 0.5s ease-out'
-                }}
-              />
-            ) : (
+            {isLoading ? (
               // 加载占位符
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
               </div>
+            ) : (
+              <img
+                key={currentImageIndex}
+                src={images[currentImageIndex]}
+                alt={name}
+                className={`w-full h-full object-cover object-center transition-all duration-500 ease-in-out
+                            ${nextImageIndex !== null ? 'opacity-50' : ''}`}
+                style={{
+                  animation: nextImageIndex === null ? 'fadeIn 0.5s ease-out' : 'none'
+                }}
+              />
             )}
 
-            {/* 图片切换按钮 - 只在有多张图片时显示 */}
+            {/* 图片切换按钮 - 只在所有图片加载完成后显示 */}
             {images.length > 1 && (
               <>
                 <button
@@ -96,7 +165,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
                                   : 'bg-white/60 hover:bg-white/80'}`}
                       onClick={(e) => {
                         e.preventDefault();
-                        setCurrentImageIndex(index);
+                        handleImageChange(index);
                       }}
                     />
                   ))}
@@ -127,24 +196,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
           ))}
         </div>
         <button
+          type="button"
           className={`absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm
-                      ${isFavorite ? 'text-red-500' : 'text-gray-400'} 
-                      hover:text-red-500 transition-colors duration-200`}
-          onClick={(e) => {
-            e.preventDefault();
-            setIsFavorite(!isFavorite);
-            onToggleFavorite(product);
-          }}
+                    ${isFavorite ? 'text-red-500' : 'text-gray-400'} 
+                    hover:text-red-500 transition-colors duration-200 z-20`}
+          onClick={handleToggleFavorite}
         >
           <HeartIcon className="w-5 h-5" />
         </button>
         <button
-          className="absolute bottom-2 right-2 p-1.5 text-white bg-blue-500/90 rounded-full 
-                     hover:bg-blue-600 transition-colors duration-200 backdrop-blur-sm"
-          onClick={(e) => {
-            e.preventDefault();
-            onAddToCart(product);
-          }}
+          onClick={handleAddToCart}
+          className="absolute bottom-2 right-2 p-2 rounded-full bg-blue-600 text-white
+                     opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                     hover:bg-blue-700 z-10"
         >
           <ShoppingCartIcon className="w-5 h-5" />
         </button>
