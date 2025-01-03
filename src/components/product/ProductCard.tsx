@@ -14,6 +14,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
   const { id, name, price, originalPrice, images, rating, reviews } = product;
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  // 预加载所有图片
+  React.useEffect(() => {
+    images.forEach(imageUrl => {
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => {
+        setLoadedImages(prev => new Set(prev).add(imageUrl));
+      };
+    });
+  }, [images]);
 
   // 处理图片切换
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -35,53 +47,63 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onToggl
     <Link to={`/products/${id}`} className="group relative block">
       <div className="relative">
         <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200">
-          <img
-            src={images[currentImageIndex]}
-            alt={name}
-            className="w-full h-full object-cover object-center 
-                       transition-all duration-300 ease-in-out transform
-                       group-hover:scale-105"
-            loading="lazy"
-          />
-          
-          {/* 图片切换按钮 - 只在有多张图片时显示 */}
-          {images.length > 1 && (
-            <>
-              <button
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
-                           bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
-                           transition-opacity duration-200 hover:bg-white"
-                onClick={handlePrevImage}
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
-                           bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
-                           transition-opacity duration-200 hover:bg-white"
-                onClick={handleNextImage}
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-
-              {/* 图片指示器 */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-200
-                              ${index === currentImageIndex 
-                                ? 'bg-white scale-110' 
-                                : 'bg-white/60 hover:bg-white/80'}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentImageIndex(index);
-                    }}
-                  />
-                ))}
+          <div className="relative w-full h-full">
+            {loadedImages.has(images[currentImageIndex]) ? (
+              <img
+                key={currentImageIndex}
+                src={images[currentImageIndex]}
+                alt={name}
+                className="w-full h-full object-cover object-center transition-all duration-500 ease-in-out"
+                style={{
+                  animation: 'fadeIn 0.5s ease-out'
+                }}
+              />
+            ) : (
+              // 加载占位符
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
               </div>
-            </>
-          )}
+            )}
+
+            {/* 图片切换按钮 - 只在有多张图片时显示 */}
+            {images.length > 1 && (
+              <>
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
+                             bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
+                             transition-opacity duration-200 hover:bg-white z-10"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeftIcon className="w-5 h-5" />
+                </button>
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full 
+                             bg-white/80 text-gray-800 opacity-0 group-hover:opacity-100
+                             transition-opacity duration-200 hover:bg-white"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRightIcon className="w-5 h-5" />
+                </button>
+
+                {/* 图片指示器 */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-all duration-200
+                                ${index === currentImageIndex 
+                                  ? 'bg-white scale-110' 
+                                  : 'bg-white/60 hover:bg-white/80'}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentImageIndex(index);
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
           {product.tags.map((tag, index) => (
