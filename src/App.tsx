@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import type { RootState } from './store'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Sidebar from './components/layout/Sidebar'
@@ -9,7 +11,6 @@ import ProductDetail from './pages/ProductDetail'
 import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import { useDispatch } from 'react-redux'
 import { checkSession } from './store/slices/authSlice'
 import CartDrawer from './components/cart/CartDrawer'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
@@ -20,6 +21,7 @@ import { Toaster } from 'react-hot-toast'
 function App() {
   const dispatch = useDispatch()
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const cartCount = useSelector((state: RootState) => state.cart.count)
 
   useEffect(() => {
     dispatch(checkSession())
@@ -49,13 +51,23 @@ function App() {
       
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       
-      <button
-        onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-4 right-4 p-3 rounded-full bg-blue-600 text-white
-                   shadow-lg hover:bg-blue-700 transition-colors"
-      >
-        <ShoppingCartIcon className="w-6 h-6" />
-      </button>
+      <div className="fixed bottom-4 right-4">
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="p-3 rounded-full bg-blue-600 text-white
+                     shadow-lg hover:bg-blue-700 transition-colors"
+        >
+          <ShoppingCartIcon className="w-6 h-6" />
+        </button>
+        {cartCount > 0 && (
+          <div className="absolute -top-2 -right-2 w-6 h-6 
+                         bg-red-500 text-white text-xs rounded-full 
+                         flex items-center justify-center font-medium">
+            {cartCount}
+          </div>
+        )}
+      </div>
+      
       <Toaster />
     </Router>
   )
