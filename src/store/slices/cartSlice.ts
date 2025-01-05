@@ -76,26 +76,26 @@ export const cartSlice = createSlice({
     updateCartItemSpecifications: (state, action: PayloadAction<{
       itemId: string;
       specifications: { [key: string]: string };
+      quantity: number;
     }>) => {
-      const { itemId, specifications } = action.payload;
+      const { itemId, specifications, quantity } = action.payload;
       const item = state.items.find(item => item.id === itemId);
       
       if (item) {
-        // 生成新的購物車項目 ID
         const newItemId = generateCartItemId(item.productId, specifications);
-        
-        // 檢查是否已存在相同規格的商品
         const existingItem = state.items.find(i => i.id === newItemId && i.id !== itemId);
         
         if (existingItem) {
-          // 如果存在相同規格的商品，合併數量並刪除原項目
-          existingItem.quantity += item.quantity;
+          existingItem.quantity += quantity;
           state.items = state.items.filter(i => i.id !== itemId);
         } else {
-          // 如果不存在相同規格的商品，更新當前項目
           item.id = newItemId;
           item.specifications = specifications;
+          item.quantity = quantity;
         }
+
+        state.total = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        state.count = state.items.reduce((sum, item) => sum + item.quantity, 0);
       }
     },
   },

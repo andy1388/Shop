@@ -5,7 +5,8 @@ import type { RootState } from '../store';
 import { addToCart } from '../store/slices/cartSlice';
 import { toggleFavorite } from '../store/slices/favoriteSlice';
 import { HeartIcon } from '@heroicons/react/24/outline';
-import ToastService from '../services/ToastService';
+import toast from 'react-hot-toast';
+import { toastConfig } from '../config/toastConfig';
 
 type TabType = '商品詳情' | '規格參數' | '商品評價';
 
@@ -64,24 +65,25 @@ const ProductDetail: React.FC = () => {
   // 處理加入購物車
   const handleAddToCart = () => {
     if (!isSpecsComplete()) {
-      ToastService.show('請選擇完整規格', 'error');
+      toast.error('請選擇完整規格', toastConfig.error);
       return;
     }
     
     if (!product) return;
     
-    dispatch(addToCart({ 
+    dispatch(addToCart({
       product,
       quantity,
       specifications: selectedSpecs
     }));
-    ToastService.show('已添加到購物車', 'success');
+    
+    toast.success('成功加入購物車！', toastConfig.success);
   };
 
   // 處理立即購買
   const handleBuyNow = () => {
     if (!isSpecsComplete()) {
-      ToastService.show('請選擇完整規格', 'error');
+      toast.error('請選擇完整規格', toastConfig.error);
       return;
     }
     
@@ -100,10 +102,12 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
     
     dispatch(toggleFavorite(product));
-    ToastService.show(
-      isFavorite ? '已從收藏中移除' : '已添加到收藏',
-      isFavorite ? 'error' : 'success'
-    );
+    
+    if (isFavorite) {
+      toast.error('已從收藏中移除', toastConfig.error);
+    } else {
+      toast.success('已添加到收藏', toastConfig.success);
+    }
   };
 
   // 處理規格選擇

@@ -15,6 +15,7 @@ import CartDrawer from './components/cart/CartDrawer'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import Favorites from './pages/Favorites'
 import Cart from './pages/Cart'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
   const dispatch = useDispatch()
@@ -55,6 +56,7 @@ function App() {
       >
         <ShoppingCartIcon className="w-6 h-6" />
       </button>
+      <Toaster />
     </Router>
   )
 }
