@@ -1,0 +1,168 @@
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { TrashIcon } from '@heroicons/react/24/outline';
+import type { RootState } from '../store';
+import type { CartItem } from '../types/cart';
+import { removeFromCart, updateQuantity, clearCart } from '../store/slices/cartSlice';
+import Button from '../components/common/Button';
+import SpecificationModal from '../components/cart/SpecificationModal';
+
+const Cart: React.FC = () => {
+  const cart = useSelector((state: RootState) => state.cart);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
+
+  const handleQuantityChange = (id: string, delta: number, currentQuantity: number) => {
+    const newQuantity = currentQuantity + delta;
+    if (newQuantity >= 1) {
+      dispatch(updateQuantity({ id, quantity: newQuantity }));
+    } else {
+      dispatch(removeFromCart(id));
+    }
+  };
+
+  const handleRemoveItem = (id: string) => {
+    dispatch(removeFromCart(id));
+  };
+
+  const handleClearCart = () => {
+    dispatch(clearCart());
+  };
+
+  if (cart.items.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">購物車</h1>
+          <p className="text-gray-500 mb-4">購物車是空的</p>
+          <Button onClick={() => navigate('/products')}>
+            繼續購物
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">購物車 ({cart.count})</h1>
+          <button
+            onClick={handleClearCart}
+            className="text-gray-500 hover:text-red-500 flex items-center gap-2"
+          >
+            <TrashIcon className="w-5 h-5" />
+            清空購物車
+          </button>
+        </div>
+
+        {/* 購物車商品列表 */}
+        <div className="space-y-4 mb-8">
+          {cart.items.map(item => (
+            <div key={item.id} className="flex gap-6 p-4 bg-white rounded-lg shadow">
+              <div 
+                className="w-24 h-24 cursor-pointer"
+                onClick={() => navigate(`/products/${item.productId}`)}
+              >
+                <img 
+                  src={item.image} 
+                  alt={item.name} 
+                  className="w-full h-full object-cover rounded-md"
+                />
+              </div>
+              <div className="flex-1">
+                <h3 
+                  className="font-medium text-lg mb-2 cursor-pointer hover:text-blue-600"
+                  onClick={() => navigate(`/products/${item.productId}`)}
+                >
+                  {item.name}
+                </h3>
+                <p 
+                  className="text-sm text-gray-500 mb-4 cursor-pointer hover:text-blue-600"
+                  onClick={() => setSelectedItem(item)}
+                >
+                  {Object.entries(item.specifications)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ')}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="text-lg font-medium text-blue-600">
+                    HK${item.price}
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        className="w-8 h-8 flex items-center justify-center border rounded-full hover:border-blue-500"
+                        onClick={() => handleQuantityChange(item.id, -1, item.quantity)}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <button 
+                        className="w-8 h-8 flex items-center justify-center border rounded-full hover:border-blue-500"
+                        onClick={() => handleQuantityChange(item.id, 1, item.quantity)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 結算區域 */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-600">商品總計：</span>
+            <span className="text-2xl font-bold">HK${cart.total}</span>
+          </div>
+          <div className="flex gap-4">
+            <Button 
+              variant="secondary"
+              className="flex-1"
+              onClick={() => navigate('/products')}
+            >
+              繼續購物
+            </Button>
+            <Button 
+              className="flex-1"
+              onClick={() => {
+                // TODO: 實現結帳功能
+                console.log('Checkout clicked');
+              }}
+            >
+              前往結帳
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* 規格選擇彈窗 */}
+      {selectedItem && (
+        <SpecificationModal
+          isOpen={true}
+          onClose={() => setSelectedItem(null)}
+          item={selectedItem}
+          availableSpecifications={{
+            '顏色': ['黑色', '白色', '藍色', '灰色'],
+            '尺碼': ['39', '40', '41', '42', '43', '44'],
+            '材質': ['網布', '真皮', '人造皮革']
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Cart; 

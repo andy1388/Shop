@@ -8,8 +8,7 @@ export interface CartItem {
   name: string;
   image: string;
   specifications: {
-    顏色?: string;
-    尺碼?: string;
+    [key: string]: string;
   };
 }
 
