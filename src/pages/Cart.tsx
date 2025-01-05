@@ -7,12 +7,16 @@ import type { CartItem } from '../types/cart';
 import { removeFromCart, updateQuantity, clearCart } from '../store/slices/cartSlice';
 import Button from '../components/common/Button';
 import SpecificationModal from '../components/cart/SpecificationModal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import toast from 'react-hot-toast';
+import { toastConfig } from '../config/toastConfig';
 
 const Cart: React.FC = () => {
   const cart = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleQuantityChange = (id: string, delta: number, currentQuantity: number) => {
     const newQuantity = currentQuantity + delta;
@@ -29,6 +33,7 @@ const Cart: React.FC = () => {
 
   const handleClearCart = () => {
     dispatch(clearCart());
+    toast.success('購物車已清空', toastConfig.success);
   };
 
   if (cart.items.length === 0) {
@@ -51,7 +56,7 @@ const Cart: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">購物車 ({cart.count})</h1>
           <button
-            onClick={handleClearCart}
+            onClick={() => setIsConfirmOpen(true)}
             className="text-gray-500 hover:text-red-500 flex items-center gap-2"
           >
             <TrashIcon className="w-5 h-5" />
@@ -146,21 +151,30 @@ const Cart: React.FC = () => {
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* 規格選擇彈窗 */}
-      {selectedItem && (
-        <SpecificationModal
-          isOpen={true}
-          onClose={() => setSelectedItem(null)}
-          item={selectedItem}
-          availableSpecifications={{
-            '顏色': ['黑色', '白色', '藍色', '灰色'],
-            '尺碼': ['39', '40', '41', '42', '43', '44'],
-            '材質': ['網布', '真皮', '人造皮革']
-          }}
+        {/* 確認對話框 */}
+        <ConfirmDialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={handleClearCart}
+          title="清空購物車"
+          message="確定要清空購物車嗎？此操作無法撤銷。"
         />
-      )}
+
+        {/* 規格選擇彈窗 */}
+        {selectedItem && (
+          <SpecificationModal
+            isOpen={true}
+            onClose={() => setSelectedItem(null)}
+            item={selectedItem}
+            availableSpecifications={{
+              '顏色': ['黑色', '白色', '藍色', '灰色'],
+              '尺碼': ['39', '40', '41', '42', '43', '44'],
+              '材質': ['網布', '真皮', '人造皮革']
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };
