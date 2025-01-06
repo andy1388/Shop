@@ -177,10 +177,7 @@ const Cart: React.FC = () => {
             </Button>
             <Button 
               className="flex-1"
-              onClick={() => {
-                // TODO: 實現結帳功能
-                console.log('Checkout clicked');
-              }}
+              onClick={() => navigate('/checkout')}
             >
               前往結帳
             </Button>

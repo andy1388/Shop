@@ -17,6 +17,7 @@ import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import Favorites from './pages/Favorites'
 import Cart from './pages/Cart'
 import { Toaster } from 'react-hot-toast'
+import Checkout from './pages/Checkout'
 
 function App() {
   const dispatch = useDispatch()
@@ -43,6 +44,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route path="/checkout" element={<Checkout />} />
             </Routes>
           </main>
         </div>
