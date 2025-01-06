@@ -24,12 +24,19 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  const handleQuantityChange = (id: string, delta: number, currentQuantity: number) => {
-    const newQuantity = currentQuantity + delta;
-    if (newQuantity >= 1) {
+  const handleQuantityChange = (id: string, value: string, currentQuantity: number) => {
+    const newQuantity = parseInt(value);
+    
+    // 檢查是否為有效數字
+    if (isNaN(newQuantity)) return;
+    
+    // 檢查範圍 (1-99)
+    if (newQuantity >= 1 && newQuantity <= 99) {
       dispatch(updateQuantity({ id, quantity: newQuantity }));
-    } else {
+    } else if (newQuantity < 1) {
       setItemToDelete(id);
+    } else {
+      toast.error('單個商品數量不能超過99件', toastConfig.error);
     }
   };
 
@@ -100,10 +107,22 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     <img 
                       src={item.image} 
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-md"
+                      className="w-20 h-20 object-cover rounded-md cursor-pointer"
+                      onClick={() => {
+                        navigate(`/products/${item.productId}`);
+                        onClose();
+                      }}
                     />
                     <div className="flex-1">
-                      <h3 className="font-medium mb-1">{item.name}</h3>
+                      <h3 
+                        className="font-medium mb-1 cursor-pointer hover:text-blue-600"
+                        onClick={() => {
+                          navigate(`/products/${item.productId}`);
+                          onClose();
+                        }}
+                      >
+                        {item.name}
+                      </h3>
                       <p 
                         className="text-sm text-gray-500 mb-2 cursor-pointer hover:text-blue-600"
                         onClick={() => setSelectedItem(item)}
@@ -120,14 +139,22 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           <div className="flex items-center gap-2">
                             <button 
                               className="w-6 h-6 flex items-center justify-center border rounded-full hover:border-blue-500"
-                              onClick={() => handleQuantityChange(item.id, -1, item.quantity)}
+                              onClick={() => handleQuantityChange(item.id, String(item.quantity - 1), item.quantity)}
                             >
                               -
                             </button>
-                            <span className="w-6 text-center">{item.quantity}</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={item.quantity}
+                              onChange={(e) => handleQuantityChange(item.id, e.target.value, item.quantity)}
+                              className="w-12 text-center border rounded px-1 py-0.5 focus:outline-none focus:border-blue-500
+                                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
                             <button 
                               className="w-6 h-6 flex items-center justify-center border rounded-full hover:border-blue-500"
-                              onClick={() => handleQuantityChange(item.id, 1, item.quantity)}
+                              onClick={() => handleQuantityChange(item.id, String(item.quantity + 1), item.quantity)}
                             >
                               +
                             </button>
