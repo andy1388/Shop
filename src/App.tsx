@@ -21,6 +21,12 @@ import { ShippingForm } from './pages/ShippingForm'
 import { Payment } from './pages/Payment'
 import { OrderComplete } from './pages/OrderComplete'
 import { Checkout } from './pages/Checkout'
+import { AdminLogin } from './pages/admin/Login'
+import { AdminRoute } from './components/admin/AdminRoute'
+import { ProductManagement } from './pages/admin/ProductManagement'
+import { AdminDashboard } from './pages/admin/Dashboard'
+import { OrderManagement } from './pages/admin/OrderManagement'
+import { AdminLayout } from './components/admin/AdminLayout'
 
 function App() {
   const dispatch = useDispatch()
@@ -51,6 +57,18 @@ function App() {
               <Route path="/checkout/shipping" element={<ShippingForm />} />
               <Route path="/checkout/payment" element={<Payment />} />
               <Route path="/checkout/complete" element={<OrderComplete />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/*" element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="products" element={<ProductManagement />} />
+                      <Route path="orders" element={<OrderManagement />} />
+                    </Routes>
+                  </AdminLayout>
+                </AdminRoute>
+              } />
             </Routes>
           </main>
         </div>
