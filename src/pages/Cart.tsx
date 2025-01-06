@@ -17,18 +17,27 @@ const Cart: React.FC = () => {
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const handleQuantityChange = (id: string, delta: number, currentQuantity: number) => {
     const newQuantity = currentQuantity + delta;
     if (newQuantity >= 1) {
       dispatch(updateQuantity({ id, quantity: newQuantity }));
     } else {
-      dispatch(removeFromCart(id));
+      setItemToDelete(id);
     }
   };
 
   const handleRemoveItem = (id: string) => {
-    dispatch(removeFromCart(id));
+    setItemToDelete(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      dispatch(removeFromCart(itemToDelete));
+      toast.success('商品已從購物車中移除', toastConfig.success);
+      setItemToDelete(null);
+    }
   };
 
   const handleClearCart = () => {
@@ -152,13 +161,22 @@ const Cart: React.FC = () => {
           </div>
         </div>
 
-        {/* 確認對話框 */}
+        {/* 清空購物車確認對話框 */}
         <ConfirmDialog
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
           onConfirm={handleClearCart}
           title="清空購物車"
           message="確定要清空購物車嗎？此操作無法撤銷。"
+        />
+
+        {/* 刪除單個商品確認對話框 */}
+        <ConfirmDialog
+          isOpen={!!itemToDelete}
+          onClose={() => setItemToDelete(null)}
+          onConfirm={handleConfirmDelete}
+          title="移除商品"
+          message="確定要從購物車中移除此商品嗎？"
         />
 
         {/* 規格選擇彈窗 */}
