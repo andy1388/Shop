@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import type { Cart, CartItem } from '../../types/cart';
 import type { Product } from '../../types/product';
 
@@ -10,10 +12,16 @@ interface AddToCartPayload {
   };
 }
 
-const initialState: Cart = {
+interface CartState {
+  items: CartItem[];
+  count: number;
+  total: number;
+}
+
+const initialState: CartState = {
   items: [],
-  total: 0,
   count: 0,
+  total: 0
 };
 
 // 生成唯一的購物車項目ID
@@ -101,6 +109,12 @@ export const cartSlice = createSlice({
   },
 });
 
+const persistConfig = {
+  key: 'cart',
+  storage,
+  whitelist: ['items', 'count', 'total'] // 指定需要持久化的字段
+};
+
 export const { 
   addToCart, 
   removeFromCart, 
@@ -108,4 +122,4 @@ export const {
   clearCart,
   updateCartItemSpecifications 
 } = cartSlice.actions;
-export default cartSlice.reducer; 
+export default persistReducer(persistConfig, cartSlice.reducer); 
