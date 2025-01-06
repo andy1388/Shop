@@ -69,9 +69,15 @@ export const ProductManagement = () => {
     const newErrors: Partial<ProductFormData> = {};
     
     if (formData.specialPrice) {
-      if (Number(formData.specialPrice) >= Number(formData.originalPrice)) {
+      const specialPrice = Number(formData.specialPrice);
+      const originalPrice = Number(formData.originalPrice);
+
+      if (specialPrice >= originalPrice) {
         newErrors.specialPrice = '特價必須低於原價';
+      } else if (specialPrice <= 0) {
+        newErrors.specialPrice = '特價不能小於或等於0';
       }
+
       if (!formData.specialPriceEndDate) {
         newErrors.specialPriceEndDate = '有特價時必須設定結束日期';
       } else {
@@ -83,8 +89,68 @@ export const ProductManagement = () => {
       }
     }
 
-    setErrors(newErrors);
+    setErrors(prev => ({
+      ...prev,
+      ...newErrors
+    }));
     return Object.keys(newErrors).length === 0;
+  };
+
+  // 驗證價格
+  const validatePrice = (value: string, field: 'originalPrice' | 'specialPrice') => {
+    const price = Number(value);
+    if (price < 0) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '價格不能小於0'
+      }));
+      return false;
+    }
+    setErrors(prev => ({
+      ...prev,
+      [field]: undefined
+    }));
+    return true;
+  };
+
+  // 驗證庫存量
+  const validateStock = (value: string) => {
+    const stock = Number(value);
+    if (stock < 0) {
+      setErrors(prev => ({
+        ...prev,
+        stock: '庫存量不能小於0'
+      }));
+      return false;
+    }
+    setErrors(prev => ({
+      ...prev,
+      stock: undefined
+    }));
+    return true;
+  };
+
+  // 驗證特價結束日期
+  const validateEndDate = (date: string) => {
+    if (!date) return true; // 如果沒有設定日期，不進行驗證
+    
+    const endDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 設置時間為當天 00:00:00
+
+    if (endDate <= today) {
+      setErrors(prev => ({
+        ...prev,
+        specialPriceEndDate: '結束日期必須大於今天'
+      }));
+      return false;
+    }
+    
+    setErrors(prev => ({
+      ...prev,
+      specialPriceEndDate: undefined
+    }));
+    return true;
   };
 
   // 處理圖片預覽
@@ -126,7 +192,11 @@ export const ProductManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateSpecialPrice()) return;
+    
+    // 添加庫存量驗證
+    if (!validateStock(formData.stock) || !validateSpecialPrice()) {
+      return;
+    }
     
     // TODO: 處理商品上架邏輯
     console.log('提交的商品數據:', formData);
@@ -266,8 +336,15 @@ export const ProductManagement = () => {
                 <Input
                   name="originalPrice"
                   type="number"
+                  min="0"
+                  step="1"
+                  preventNegative
                   value={formData.originalPrice}
-                  onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, originalPrice: e.target.value });
+                    validatePrice(e.target.value, 'originalPrice');
+                  }}
+                  error={errors.originalPrice}
                   required
                 />
               </div>
@@ -279,9 +356,15 @@ export const ProductManagement = () => {
                 <Input
                   name="specialPrice"
                   type="number"
+                  min="0"
+                  step="1"
+                  preventNegative
                   value={formData.specialPrice}
                   onChange={(e) => {
                     setFormData({ ...formData, specialPrice: e.target.value });
+                    validatePrice(e.target.value, 'specialPrice');
+                  }}
+                  onBlur={() => {
                     validateSpecialPrice();
                   }}
                   placeholder="若不設特價請留空"
@@ -298,12 +381,22 @@ export const ProductManagement = () => {
                   type="date"
                   value={formData.specialPriceEndDate}
                   onChange={(e) => {
-                    setFormData({ ...formData, specialPriceEndDate: e.target.value });
-                    validateSpecialPrice();
+                    const newDate = e.target.value;
+                    setFormData({ ...formData, specialPriceEndDate: newDate });
+                    validateEndDate(newDate);
                   }}
+                  onBlur={(e) => {
+                    validateEndDate(e.target.value);
+                  }}
+                  min={new Date().toISOString().split('T')[0]} // 設置最小日期為今天
                   disabled={!formData.specialPrice}
                   error={errors.specialPriceEndDate}
                 />
+                {formData.specialPrice && !formData.specialPriceEndDate && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    若有特價必須設定結束日期
+                  </p>
+                )}
               </div>
 
               <div>
@@ -313,8 +406,20 @@ export const ProductManagement = () => {
                 <Input
                   name="stock"
                   type="number"
+                  min="0"
+                  step="1"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e') {
+                      e.preventDefault();
+                    }
+                  }}
                   value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                  onChange={(e) => {
+                    const value = Math.max(0, Number(e.target.value));
+                    setFormData({ ...formData, stock: value.toString() });
+                    validateStock(value.toString());
+                  }}
+                  error={errors.stock}
                   required
                 />
               </div>

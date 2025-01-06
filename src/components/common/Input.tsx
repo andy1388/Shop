@@ -1,47 +1,46 @@
 import React from 'react'
 
-interface InputProps {
-  type?: string
-  name: string
-  placeholder?: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  className?: string
-  error?: string | null
-  onBlur?: () => void
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: string;
+  preventNegative?: boolean;
 }
 
-const Input = ({ 
-  type = 'text', 
-  name, 
-  placeholder, 
-  value, 
-  onChange, 
-  className = '',
-  error,
-  onBlur
-}: InputProps) => {
+const Input: React.FC<InputProps> = ({ 
+  error, 
+  preventNegative,
+  type,
+  onKeyDown,
+  onChange,
+  ...props 
+}) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (preventNegative && (e.key === '-' || e.key === 'e')) {
+      e.preventDefault();
+    }
+    onKeyDown?.(e);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (preventNegative && type === 'number') {
+      const value = Math.max(0, Number(e.target.value));
+      e.target.value = value.toString();
+    }
+    onChange?.(e);
+  };
+
   return (
-    <div className="w-full">
+    <div>
       <input
         type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
-          ${error 
-            ? 'border-red-500 focus:ring-red-200' 
-            : 'border-gray-300 focus:ring-blue-200'
-          } 
-          ${className}`}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200
+          ${error ? 'border-red-500' : 'border-gray-300'}`}
+        onKeyDown={handleKeyDown}
+        onChange={handleChange}
+        {...props}
       />
-      {error && (
-        <p className="mt-1 text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
-  )
-}
+  );
+};
 
-export default Input 
+export default Input; 
