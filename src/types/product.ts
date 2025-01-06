@@ -13,7 +13,7 @@ export interface Product {
   rating: number;
   reviews: number;
   specifications: {
-    [key: string]: string;
+    [key: string]: string[];
   };
   createdAt: string;
   updatedAt: string;

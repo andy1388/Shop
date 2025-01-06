@@ -10,9 +10,11 @@ import SpecificationModal from '../components/cart/SpecificationModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
 import { toastConfig } from '../config/toastConfig';
+import type { Product } from '../types/product';
 
 const Cart: React.FC = () => {
   const cart = useSelector((state: RootState) => state.cart);
+  const products = useSelector((state: RootState) => state.products.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
@@ -24,6 +26,15 @@ const Cart: React.FC = () => {
     
     // 檢查是否為有效數字
     if (isNaN(newQuantity)) return;
+    
+    const item = cart.items.find(item => item.id === id);
+    const product = products.find(p => p.id === item?.productId);
+    
+    // 檢查庫存
+    if (product && newQuantity > product.stock) {
+      toast.error(`庫存僅剩 ${product.stock} 件`, toastConfig.error);
+      return;
+    }
     
     // 檢查範圍 (1-99)
     if (newQuantity >= 1 && newQuantity <= 99) {
