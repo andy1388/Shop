@@ -50,6 +50,11 @@ interface Product {
   category: string;
   status: string;
   created_at: string;
+  images?: string;
+}
+
+interface ProductWithImages extends Omit<Product, 'images'> {
+  images: string[];
 }
 
 interface DatabaseCallback {
@@ -58,13 +63,29 @@ interface DatabaseCallback {
 
 // 獲取所有商品
 router.get('/', (_req: ExpressRequest, res: ExpressResponse) => {
-  dbInstance.all('SELECT * FROM products', [], (err: Error | null, rows: Product[]) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
+  dbInstance.all(
+    `SELECT p.*, GROUP_CONCAT(pi.image_url) as images
+     FROM products p
+     LEFT JOIN product_images pi ON p.id = pi.product_id
+     GROUP BY p.id`,
+    [],
+    (err: Error | null, rows: Product[]) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // 處理圖片 URL
+      const productsWithImages = rows.map(product => ({
+        ...product,
+        images: product.images ? 
+          product.images.split(',').filter(Boolean) : // 過濾空值
+          []
+      }));
+      
+      res.json(productsWithImages);
     }
-    res.json(rows);
-  });
+  );
 });
 
 // 創建新商品（添加圖片上傳）
@@ -86,6 +107,8 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
     const files = req.files as Express.Multer.File[];
     const imageUrls = files ? files.map(file => file.filename) : [];
 
+    console.log('Uploaded image URLs:', imageUrls); // 添加日誌
+
     // 插入商品數據
     const result: any = await new Promise((resolve, reject) => {
       dbInstance.run(
@@ -106,13 +129,20 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
       const placeholders = imageUrls.map(() => '(?, ?, ?)').join(',');
       const values = imageUrls.flatMap((url, index) => [result.id, url, index]);
       
+      console.log('Saving image records:', { placeholders, values }); // 添加日誌
+
       await new Promise((resolve, reject) => {
         dbInstance.run(
           `INSERT INTO product_images (product_id, image_url, sort_order) VALUES ${placeholders}`,
           values,
           (err: Error | null) => {
-            if (err) reject(err);
-            else resolve(true);
+            if (err) {
+              console.error('Error saving image records:', err);
+              reject(err);
+            } else {
+              console.log('Image records saved successfully');
+              resolve(true);
+            }
           }
         );
       });

@@ -11,6 +11,7 @@ app.use(expressApp.json());
 
 // 添加靜態文件服務
 app.use('/uploads', expressApp.static(path.join(__dirname, '../../uploads')));
+app.use(expressApp.static(path.join(__dirname, '../../public')));
 
 // 路由
 app.use('/api/products', productRoutes);

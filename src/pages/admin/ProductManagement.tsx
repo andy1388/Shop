@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useDropzone } from 'react-dropzone';
-import { productApi } from '../../services/api';
+import { productApi, API_URL } from '../../services/api';
 import { toast } from 'react-hot-toast';
 
 interface Product {
@@ -11,13 +11,12 @@ interface Product {
   price: number;
   stock: number;
   status: 'active' | 'inactive';
-  image?: string;
-  images?: string[];
   description: string;
   category: string;
   original_price: number;
   special_price?: number;
   special_price_end_date?: string;
+  images?: string[];
 }
 
 interface ProductFormData {
@@ -342,12 +341,13 @@ export const ProductManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {product.images && product.images[0] ? (
                       <img 
-                        src={`${API_URL}/uploads/${product.images[0]}`} 
+                        src={`http://localhost:3000/uploads/${product.images[0]}`}
                         alt={product.name} 
                         className="h-12 w-12 object-cover rounded"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder.png'; // 設置預設圖片
+                          target.src = '/no-image.png';
+                          target.onerror = null;
                         }}
                       />
                     ) : (
