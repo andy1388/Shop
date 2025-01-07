@@ -85,20 +85,23 @@ export const productApi = {
   // 創建新商品
   createProduct: async (productData: ProductFormData) => {
     try {
+      const formData = new FormData();
+      formData.append('name', productData.name);
+      formData.append('original_price', productData.originalPrice);
+      formData.append('special_price', productData.specialPrice);
+      formData.append('special_price_end_date', productData.specialPriceEndDate);
+      formData.append('stock', productData.stock);
+      formData.append('description', productData.description);
+      formData.append('category', productData.category);
+
+      // 添加圖片文件
+      productData.images.forEach((image, index) => {
+        formData.append(`images`, image);
+      });
+
       const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: productData.name,
-          original_price: productData.originalPrice,
-          special_price: productData.specialPrice,
-          special_price_end_date: productData.specialPriceEndDate,
-          stock: productData.stock,
-          description: productData.description,
-          category: productData.category
-        })
+        body: formData // 不要設置 Content-Type，讓瀏覽器自動處理
       });
       
       if (!response.ok) {
