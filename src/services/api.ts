@@ -96,16 +96,18 @@ export const productApi = {
 
       // 添加圖片文件
       productData.images.forEach((image, index) => {
-        formData.append(`images`, image);
+        formData.append('images', image);
+        console.log(`Appending image ${index}:`, image); // 添加日誌
       });
 
       const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
-        body: formData // 不要設置 Content-Type，讓瀏覽器自動處理
+        body: formData
       });
       
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Network response was not ok');
       }
       
       return response.json();

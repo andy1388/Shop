@@ -80,6 +80,8 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
       category
     } = req.body;
 
+    console.log('Received files:', req.files); // 添加日誌
+
     // 處理上傳的文件
     const files = req.files as Express.Multer.File[];
     const imageUrls = files ? files.map(file => file.filename) : [];
@@ -180,6 +182,23 @@ router.put('/:id', (req: CustomRequest, res: ExpressResponse) => {
       res.json({
         message: "Product updated successfully"
       });
+    }
+  );
+});
+
+// 獲取商品圖片
+router.get('/:id/images', (req: ExpressRequest, res: ExpressResponse) => {
+  const { id } = req.params;
+  
+  dbInstance.all(
+    'SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order',
+    [id],
+    (err: Error | null, rows: any[]) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json(rows);
     }
   );
 });
