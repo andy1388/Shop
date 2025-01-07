@@ -128,5 +128,35 @@ export const productApi = {
       console.error('Error deleting product:', error);
       throw error;
     }
+  },
+
+  // 更新商品
+  updateProduct: async (id: string, productData: ProductFormData) => {
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: productData.name,
+          original_price: productData.originalPrice,
+          special_price: productData.specialPrice,
+          special_price_end_date: productData.specialPriceEndDate,
+          stock: productData.stock,
+          description: productData.description,
+          category: productData.category
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
   }
 }; 

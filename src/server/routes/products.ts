@@ -98,4 +98,40 @@ router.delete('/:id', (req: ExpressRequest, res: ExpressResponse) => {
   });
 });
 
+// 更新商品
+router.put('/:id', (req: CustomRequest, res: ExpressResponse) => {
+  const { id } = req.params;
+  const {
+    name,
+    original_price,
+    special_price,
+    special_price_end_date,
+    stock,
+    description,
+    category
+  } = req.body;
+
+  dbInstance.run(
+    `UPDATE products SET 
+      name = ?, 
+      original_price = ?, 
+      special_price = ?, 
+      special_price_end_date = ?,
+      stock = ?, 
+      description = ?, 
+      category = ?
+    WHERE id = ?`,
+    [name, original_price, special_price, special_price_end_date, stock, description, category, id],
+    (err: Error | null) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({
+        message: "Product updated successfully"
+      });
+    }
+  );
+});
+
 module.exports = router;

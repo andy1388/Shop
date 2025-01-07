@@ -55,6 +55,7 @@ export const ProductManagement = () => {
   const [errors, setErrors] = useState<Partial<ProductFormData>>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // 獲取商品列表
   const fetchProducts = async () => {
@@ -200,6 +201,23 @@ export const ProductManagement = () => {
     });
   };
 
+  // 處理編輯按鈕點擊
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      originalPrice: product.original_price.toString(),
+      specialPrice: product.special_price?.toString() || '',
+      specialPriceEndDate: product.special_price_end_date || '',
+      stock: product.stock.toString(),
+      description: product.description,
+      category: product.category,
+      images: []
+    });
+    setIsModalOpen(true);
+  };
+
+  // 修改提交處理函數
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -216,12 +234,19 @@ export const ProductManagement = () => {
         return;
       }
 
-      // 調用後端 API
-      const result = await productApi.createProduct(formData);
+      let result;
+      if (editingProduct) {
+        // 更新商品
+        result = await productApi.updateProduct(editingProduct.id.toString(), formData);
+      } else {
+        // 創建新商品
+        result = await productApi.createProduct(formData);
+      }
       
-      if (result.id) {
-        toast.success('商品上架成功！');
+      if (result) {
+        toast.success(editingProduct ? '商品更新成功！' : '商品上架成功！');
         setIsModalOpen(false);
+        setEditingProduct(null);
         // 重置表單
         setFormData({
           name: '',
@@ -241,7 +266,7 @@ export const ProductManagement = () => {
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('商品上架失敗，請稍後再試');
+      toast.error(editingProduct ? '商品更新失敗' : '商品上架失敗，請稍後再試');
     }
   };
 
@@ -354,7 +379,7 @@ export const ProductManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <button 
                       className="text-blue-600 hover:text-blue-900 mr-3"
-                      onClick={() => {/* TODO: 實現編輯功能 */}}
+                      onClick={() => handleEdit(product)}
                     >
                       編輯
                     </button>
@@ -377,7 +402,7 @@ export const ProductManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">新增商品</h2>
+              <h2 className="text-xl font-bold">{editingProduct ? '編輯商品' : '新增商品'}</h2>
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
