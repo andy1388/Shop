@@ -1,15 +1,23 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useDropzone } from 'react-dropzone';
+import { productApi } from '../../services/api';
+import { toast } from 'react-hot-toast';
 
 interface Product {
   id: string;
-  image: string;
   name: string;
   price: number;
   stock: number;
   status: 'active' | 'inactive';
+  image?: string;
+  images?: string[];
+  description: string;
+  category: string;
+  original_price: number;
+  special_price?: number;
+  special_price_end_date?: string;
 }
 
 interface ProductFormData {
@@ -45,24 +53,26 @@ export const ProductManagement = () => {
   });
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<ProductFormData>>({});
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      image: '/product1.jpg',
-      name: 'sasa',
-      price: 2,
-      stock: 4,
-      status: 'active'
-    },
-    {
-      id: '2',
-      image: '/product2.jpg',
-      name: 'ting9',
-      price: 2321,
-      stock: 2,
-      status: 'active'
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 獲取商品列表
+  const fetchProducts = async () => {
+    try {
+      const data = await productApi.getProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('獲取商品列表失敗');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
+
+  // 組件掛載時獲取商品列表
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   // 驗證特價和日期
   const validateSpecialPrice = () => {
@@ -190,23 +200,63 @@ export const ProductManagement = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 添加庫存量驗證
-    if (!validateStock(formData.stock) || !validateSpecialPrice()) {
-      return;
+    try {
+      // 驗證所有必填字段
+      if (!formData.name || !formData.originalPrice || !formData.stock || !formData.category) {
+        toast.error('請填寫所有必填欄位');
+        return;
+      }
+
+      // 驗證特價
+      if (formData.specialPrice && !validateSpecialPrice()) {
+        toast.error('特價設置有誤，請檢查');
+        return;
+      }
+
+      // 調用後端 API
+      const result = await productApi.createProduct(formData);
+      
+      if (result.id) {
+        toast.success('商品上架成功！');
+        setIsModalOpen(false);
+        // 重置表單
+        setFormData({
+          name: '',
+          originalPrice: '',
+          specialPrice: '',
+          specialPriceEndDate: '',
+          stock: '',
+          description: '',
+          category: '',
+          images: []
+        });
+        // 清理預覽圖片
+        previewUrls.forEach(url => URL.revokeObjectURL(url));
+        setPreviewUrls([]);
+        // 重新獲取商品列表
+        fetchProducts();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('商品上架失敗，請稍後再試');
     }
-    
-    // TODO: 處理商品上架邏輯
-    console.log('提交的商品數據:', formData);
-    setIsModalOpen(false);
   };
 
-  // 添加刪除商品功能
-  const handleDelete = (id: string) => {
+  // 修改刪除商品功能
+  const handleDelete = async (id: string) => {
     if (window.confirm('確定要刪除此商品嗎？')) {
-      setProducts(products.filter(product => product.id !== id));
+      try {
+        await productApi.deleteProduct(id);
+        toast.success('商品已刪除');
+        // 重新獲取商品列表
+        fetchProducts();
+      } catch (error) {
+        console.error('Error:', error);
+        toast.error('刪除失敗，請稍後再試');
+      }
     }
   };
 
@@ -233,73 +283,93 @@ export const ProductManagement = () => {
 
       {/* 商品列表 */}
       <div className="bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                商品圖片
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                商品名稱
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                價格
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                庫存
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                狀態
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products.map(product => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <img src={product.image} alt={product.name} className="h-12 w-12 object-cover rounded" />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {product.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  HK$ {product.price}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {product.stock}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => handleStatusChange(product.id)}
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${product.status === 'active' 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
-                  >
-                    {product.status === 'active' ? '上架中' : '已下架'}
-                  </button>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <button 
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                    onClick={() => {/* TODO: 實現編輯功能 */}}
-                  >
-                    編輯
-                  </button>
-                  <button 
-                    className="text-red-600 hover:text-red-900"
-                    onClick={() => handleDelete(product.id)}
-                  >
-                    刪除
-                  </button>
-                </td>
+        {isLoading ? (
+          <div className="p-4 text-center">載入中...</div>
+        ) : products.length === 0 ? (
+          <div className="p-4 text-center">暫無商品</div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  商品圖片
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  商品名稱
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  價格
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  庫存
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  狀態
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  操作
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {products.map(product => (
+                <tr key={product.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {product.images && product.images[0] ? (
+                      <img 
+                        src={`${API_URL}/uploads/${product.images[0]}`} 
+                        alt={product.name} 
+                        className="h-12 w-12 object-cover rounded"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder.png'; // 設置預設圖片
+                        }}
+                      />
+                    ) : (
+                      <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400">無圖片</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {product.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    HK$ {product.price}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {product.stock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => handleStatusChange(product.id)}
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${product.status === 'active' 
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                    >
+                      {product.status === 'active' ? '上架中' : '已下架'}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      onClick={() => {/* TODO: 實現編輯功能 */}}
+                    >
+                      編輯
+                    </button>
+                    <button 
+                      className="text-red-600 hover:text-red-900"
+                      onClick={() => handleDelete(product.id)}
+                    >
+                      刪除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* 新增商品彈窗 */}
@@ -494,23 +564,28 @@ export const ProductManagement = () => {
 
                 {/* 圖片預覽 */}
                 {previewUrls.length > 0 && (
-                  <div className="mt-4 grid grid-cols-5 gap-4">
-                    {previewUrls.map((url, index) => (
-                      <div key={url} className="relative">
-                        <img
-                          src={url}
-                          alt={`preview ${index + 1}`}
-                          className="h-20 w-20 object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 mb-2">預覽圖片：</p>
+                    <div className="grid grid-cols-5 gap-4">
+                      {previewUrls.map((url, index) => (
+                        <div key={url} className="relative group">
+                          <img
+                            src={url}
+                            alt={`preview ${index + 1}`}
+                            className="h-20 w-20 object-cover rounded border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 
+                                     flex items-center justify-center text-xs hover:bg-red-600
+                                     opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

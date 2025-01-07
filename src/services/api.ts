@@ -52,4 +52,81 @@ export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
-} 
+}
+
+const API_URL = 'http://localhost:3000/api';
+
+interface ProductFormData {
+  name: string;
+  originalPrice: string;
+  specialPrice: string;
+  specialPriceEndDate: string;
+  stock: string;
+  description: string;
+  category: string;
+  images: File[];
+}
+
+export const productApi = {
+  // 獲取商品列表
+  getProducts: async () => {
+    try {
+      const response = await fetch(`${API_URL}/products`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
+    }
+  },
+
+  // 創建新商品
+  createProduct: async (productData: ProductFormData) => {
+    try {
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: productData.name,
+          original_price: productData.originalPrice,
+          special_price: productData.specialPrice,
+          special_price_end_date: productData.specialPriceEndDate,
+          stock: productData.stock,
+          description: productData.description,
+          category: productData.category
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  },
+
+  // 刪除商品
+  deleteProduct: async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  }
+}; 
