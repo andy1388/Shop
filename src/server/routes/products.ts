@@ -160,24 +160,68 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
 });
 
 // 刪除商品
-router.delete('/:id', (req: ExpressRequest, res: ExpressResponse) => {
+router.delete('/:id', async (req: ExpressRequest, res: ExpressResponse) => {
   const { id } = req.params;
 
-  dbInstance.run('DELETE FROM products WHERE id = ?', id, (err: Error | null) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    
-    // 同時刪除相關的圖片記錄
-    dbInstance.run('DELETE FROM product_images WHERE product_id = ?', id, (err: Error | null) => {
-      if (err) {
-        console.error('Error deleting product images:', err);
-      }
+  try {
+    // 1. 首先獲取商品的圖片記錄
+    const images: { image_url: string }[] = await new Promise((resolve, reject) => {
+      dbInstance.all(
+        'SELECT image_url FROM product_images WHERE product_id = ?',
+        [id],
+        (err: Error | null, rows: any[]) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
     });
 
-    res.json({ message: 'Product deleted successfully' });
-  });
+    // 2. 刪除實際的圖片文件
+    for (const image of images) {
+      const imagePath = pathUtil.join(__dirname, '../../../uploads', image.image_url);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted image file: ${imagePath}`);
+        }
+      } catch (err) {
+        console.error(`Error deleting image file ${imagePath}:`, err);
+      }
+    }
+
+    // 3. 刪除數據庫中的圖片記錄
+    await new Promise((resolve, reject) => {
+      dbInstance.run(
+        'DELETE FROM product_images WHERE product_id = ?',
+        [id],
+        (err: Error | null) => {
+          if (err) reject(err);
+          else resolve(true);
+        }
+      );
+    });
+
+    // 4. 最後刪除商品記錄
+    await new Promise((resolve, reject) => {
+      dbInstance.run(
+        'DELETE FROM products WHERE id = ?',
+        [id],
+        (err: Error | null) => {
+          if (err) reject(err);
+          else resolve(true);
+        }
+      );
+    });
+
+    res.json({ 
+      message: 'Product and associated images deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete product and images'
+    });
+  }
 });
 
 // 更新商品
