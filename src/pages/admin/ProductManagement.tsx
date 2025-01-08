@@ -56,6 +56,7 @@ export const ProductManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
 
   // 獲取商品列表
   const fetchProducts = async () => {
@@ -356,7 +357,7 @@ export const ProductManagement = () => {
     ));
   };
 
-  // 修改關閉模�框的處理
+  // 修改關閉模框的處理
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
@@ -372,6 +373,24 @@ export const ProductManagement = () => {
       images: []
     });
     setPreviewUrls([]);
+  };
+
+  // 添加切換圖片的函數
+  const handleImageChange = (productId: string, direction: 'prev' | 'next') => {
+    setCurrentImageIndexes(prev => {
+      const currentIndex = prev[productId] || 0;
+      const product = products.find(p => p.id === productId);
+      const maxIndex = (product?.images?.length || 1) - 1;
+      
+      let newIndex;
+      if (direction === 'next') {
+        newIndex = currentIndex >= maxIndex ? 0 : currentIndex + 1;
+      } else {
+        newIndex = currentIndex <= 0 ? maxIndex : currentIndex - 1;
+      }
+      
+      return { ...prev, [productId]: newIndex };
+    });
   };
 
   return (
@@ -396,81 +415,115 @@ export const ProductManagement = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品圖片
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品名稱
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/6 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   價格
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   庫存
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   分類
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   狀態
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-24 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map(product => (
-                <tr key={product.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {product.images && product.images[0] ? (
-                      <img 
-                        src={`http://localhost:3000/uploads/${product.images[0]}`}
-                        alt={product.name} 
-                        className="h-12 w-12 object-cover rounded"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/no-image.png';
-                          target.onerror = null;
-                        }}
-                      />
-                    ) : (
-                      <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
-                        <span className="text-gray-400">無圖片</span>
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="relative w-48 h-48 group">
+                      {product.images && product.images.length > 0 ? (
+                        <>
+                          <img 
+                            src={`http://localhost:3000/uploads/${product.images[currentImageIndexes[product.id] || 0]}`}
+                            alt={product.name} 
+                            className="w-48 h-48 object-cover rounded"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/no-image.png';
+                              target.onerror = null;
+                            }}
+                          />
+                          {product.images.length > 1 && (
+                            <>
+                              <div className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleImageChange(product.id, 'prev');
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center text-white bg-black bg-opacity-50 hover:bg-opacity-70 text-2xl rounded-full mx-1"
+                                >
+                                  ‹
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleImageChange(product.id, 'next');
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center text-white bg-black bg-opacity-50 hover:bg-opacity-70 text-2xl rounded-full mx-1"
+                                >
+                                  ›
+                                </button>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+                                <span className="text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded-sm">
+                                  {(currentImageIndexes[product.id] || 0) + 1}/{product.images.length}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-48 h-48 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">無圖片</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-900 truncate max-w-xs">
+                      {product.name}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="text-sm text-gray-900">HK$ {product.original_price}</div>
+                    {product.special_price && (
+                      <div className="text-xs text-red-600">
+                        特價: HK$ {product.special_price}
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {product.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    HK$ {product.original_price}
-                    {product.special_price && (
-                      <span className="ml-2 text-red-600">
-                        特價: HK$ {product.special_price}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 text-center text-sm text-gray-900">
                     {product.stock}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 text-sm text-gray-900">
                     {CATEGORIES.find(cat => cat.id === product.category)?.name || product.category}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => handleStatusChange(product.id)}
+                  <td className="px-4 py-3 text-center">
+                    <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                         ${product.status === 'active' 
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                          : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'}`}
                     >
                       {product.status === 'active' ? '上架中' : '已下架'}
-                    </button>
+                    </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-4 py-3 text-center text-sm space-x-2">
                     <button 
-                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      className="text-blue-600 hover:text-blue-900"
                       onClick={() => handleEdit(product)}
                     >
                       編輯
