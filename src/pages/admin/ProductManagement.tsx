@@ -360,7 +360,12 @@ export const ProductManagement = () => {
                     {product.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    HK$ {product.price}
+                    HK$ {product.original_price}
+                    {product.special_price && (
+                      <span className="ml-2 text-red-600">
+                        特價: HK$ {product.special_price}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {product.stock}
