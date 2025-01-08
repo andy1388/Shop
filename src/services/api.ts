@@ -163,5 +163,23 @@ export const productApi = {
       console.error('Error updating product:', error);
       throw error;
     }
+  },
+
+  // 刪除商品圖片
+  deleteProductImage: async (productId: string, imageUrl: string) => {
+    try {
+      const response = await fetch(`${API_URL}/products/${productId}/images/${imageUrl}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete image');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error deleting product image:', error);
+      throw error;
+    }
   }
 }; 

@@ -189,20 +189,46 @@ export const ProductManagement = () => {
   });
 
   // 移除圖片
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    if (editingProduct && editingProduct.images && editingProduct.images[index]) {
+      // 如果是編輯模式，需要從服務器刪除圖片
+      try {
+        // 這裡可以添加一個 API 調用來刪除特定圖片
+        // await productApi.deleteProductImage(editingProduct.id, editingProduct.images[index]);
+        
+        // 更新編輯產品的圖片列表
+        const updatedImages = [...(editingProduct.images || [])];
+        updatedImages.splice(index, 1);
+        setEditingProduct({
+          ...editingProduct,
+          images: updatedImages
+        });
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        toast.error('刪除圖片失敗');
+        return;
+      }
+    }
+
+    // 更新預覽
+    setPreviewUrls(prev => {
+      const newUrls = [...prev];
+      newUrls.splice(index, 1);
+      return newUrls;
+    });
+
+    // 更新表單數據中的圖片
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-    setPreviewUrls(prev => {
-      URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i !== index);
-    });
   };
 
   // 處理編輯按鈕點擊
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
     setEditingProduct(product);
+    
+    // 設置基本表單數據
     setFormData({
       name: product.name,
       originalPrice: product.original_price.toString(),
@@ -211,8 +237,19 @@ export const ProductManagement = () => {
       stock: product.stock.toString(),
       description: product.description,
       category: product.category,
-      images: []
+      images: [] // 保持為空數組，因為我們不需要實際的 File 對象
     });
+
+    // 如果有現有圖片，設置�覽 URL
+    if (product.images && product.images.length > 0) {
+      const previewUrls = product.images.map(
+        imageName => `http://localhost:3000/uploads/${imageName}`
+      );
+      setPreviewUrls(previewUrls);
+    } else {
+      setPreviewUrls([]);
+    }
+
     setIsModalOpen(true);
   };
 

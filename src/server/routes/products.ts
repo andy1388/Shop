@@ -277,4 +277,34 @@ router.get('/:id/images', (req: ExpressRequest, res: ExpressResponse) => {
   );
 });
 
+// 刪除單個商品圖片
+router.delete('/:productId/images/:imageUrl', async (req: ExpressRequest, res: ExpressResponse) => {
+  const { productId, imageUrl } = req.params;
+
+  try {
+    // 1. 刪除實際文件
+    const imagePath = pathUtil.join(__dirname, '../../../uploads', imageUrl);
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
+
+    // 2. 從數據庫中刪除記錄
+    await new Promise((resolve, reject) => {
+      dbInstance.run(
+        'DELETE FROM product_images WHERE product_id = ? AND image_url = ?',
+        [productId, imageUrl],
+        (err: Error | null) => {
+          if (err) reject(err);
+          else resolve(true);
+        }
+      );
+    });
+
+    res.json({ message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    res.status(500).json({ error: 'Failed to delete image' });
+  }
+});
+
 module.exports = router;
