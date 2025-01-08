@@ -675,6 +675,18 @@ export const ProductManagement = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  商品編號
+                </label>
+                <Input
+                  name="sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  placeholder="選填，如不填將自動生成"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   商品名稱
                 </label>
                 <Input

@@ -1,9 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-// 使用不同的變量名避免衝突
 const pathUtil = require('path');
 const fs = require('fs');
 const dbInstance = require('../db/database');
+
 const router = express.Router();
 
 // 配置 multer
@@ -23,21 +23,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// 使用 type 導入來避免命名衝突
-type ExpressRequest = import('express').Request;
-type ExpressResponse = import('express').Response;
-
-interface CustomRequest extends ExpressRequest {
-  body: {
-    name: string;
-    original_price: number;
-    special_price?: number;
-    special_price_end_date?: string;
-    stock: number;
-    description: string;
-    category: string;
-  }
-}
+// 定義類型
+type ExpressReq = import('express').Request;
+type ExpressRes = import('express').Response;
 
 interface Product {
   id: number;
@@ -53,16 +41,12 @@ interface Product {
   images?: string;
 }
 
-interface ProductWithImages extends Omit<Product, 'images'> {
-  images: string[];
-}
-
 interface DatabaseCallback {
   lastID: number;
 }
 
 // 獲取所有商品
-router.get('/', (_req: ExpressRequest, res: ExpressResponse) => {
+router.get('/', (_req: ExpressReq, res: ExpressRes) => {
   dbInstance.all(
     `SELECT p.*, GROUP_CONCAT(pi.image_url) as images
      FROM products p
@@ -89,9 +73,10 @@ router.get('/', (_req: ExpressRequest, res: ExpressResponse) => {
 });
 
 // 創建新商品（添加圖片上傳）
-router.post('/', upload.array('images', 5), async (req: any, res: ExpressResponse) => {
+router.post('/', upload.array('images', 5), async (req: any, res: ExpressRes) => {
   try {
     const {
+      sku,
       name,
       original_price,
       special_price,
@@ -100,6 +85,20 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
       description,
       category
     } = req.body;
+
+    console.log('Creating product with data:', {
+      sku,
+      name,
+      original_price,
+      special_price,
+      special_price_end_date,
+      stock,
+      description,
+      category
+    });
+
+    // 如果沒有提供 SKU，生成一個隨機的 SKU
+    const productSku = sku || `SKU${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
     console.log('Received files:', req.files); // 添加日誌
 
@@ -111,17 +110,36 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
 
     // 插入商品數據
     const result: any = await new Promise((resolve, reject) => {
-      dbInstance.run(
-        `INSERT INTO products (
-          name, original_price, special_price, special_price_end_date,
-          stock, description, category, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, original_price, special_price, special_price_end_date, stock, description, category, 'active'],
-        function(this: DatabaseCallback, err: Error | null) {
-          if (err) reject(err);
-          else resolve({ id: this.lastID });
+      const sql = `
+        INSERT INTO products (
+          sku, name, original_price, special_price, special_price_end_date,
+          stock, description, category, status, sales
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const params = [
+        productSku,
+        name,
+        original_price,
+        special_price || null,
+        special_price_end_date || null,
+        stock,
+        description,
+        category,
+        'active',
+        0  // 初始銷量為 0
+      ];
+
+      console.log('SQL:', sql);
+      console.log('Parameters:', params);
+
+      dbInstance.run(sql, params, function(this: DatabaseCallback, err: Error | null) {
+        if (err) {
+          console.error('Database error:', err);
+          reject(err);
+        } else {
+          resolve({ id: this.lastID });
         }
-      );
+      });
     });
 
     // 如果有圖片，保存圖片記錄
@@ -150,17 +168,22 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRespons
 
     res.json({
       id: result.id,
+      sku: productSku,
       message: "Product created successfully",
       images: imageUrls
     });
   } catch (error) {
-    console.error('Error creating product:', error);
-    res.status(500).json({ error: 'Failed to create product' });
+    console.error('Detailed error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create product',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
   }
 });
 
 // 刪除商品
-router.delete('/:id', async (req: ExpressRequest, res: ExpressResponse) => {
+router.delete('/:id', async (req: ExpressReq, res: ExpressRes) => {
   const { id } = req.params;
 
   try {
@@ -178,7 +201,7 @@ router.delete('/:id', async (req: ExpressRequest, res: ExpressResponse) => {
 
     // 2. 刪除實際的圖片文件
     for (const image of images) {
-      const imagePath = pathUtil.join(__dirname, '../../../uploads', image.image_url);
+      const imagePath = pathUtil.join(__dirname, '../../../uploads',image.image_url);
       try {
         if (fs.existsSync(imagePath)) {
           fs.unlinkSync(imagePath);
@@ -219,13 +242,14 @@ router.delete('/:id', async (req: ExpressRequest, res: ExpressResponse) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ 
-      error: 'Failed to delete product and images'
+      error: 'Failed to delete product',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
 // 更新商品
-router.put('/:id', upload.array('images', 5), async (req: any, res: ExpressResponse) => {
+router.put('/:id', upload.array('images', 5), async (req: any, res: ExpressRes) => {
   const { id } = req.params;
   try {
     const {
@@ -301,12 +325,15 @@ router.put('/:id', upload.array('images', 5), async (req: any, res: ExpressRespo
     });
   } catch (error) {
     console.error('Error updating product:', error);
-    res.status(500).json({ error: 'Failed to update product' });
+    res.status(500).json({ 
+      error: 'Failed to update product',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
 // 獲取商品圖片
-router.get('/:id/images', (req: ExpressRequest, res: ExpressResponse) => {
+router.get('/:id/images', (req: ExpressReq, res: ExpressRes) => {
   const { id } = req.params;
   
   dbInstance.all(
@@ -323,12 +350,12 @@ router.get('/:id/images', (req: ExpressRequest, res: ExpressResponse) => {
 });
 
 // 刪除單個商品圖片
-router.delete('/:productId/images/:imageUrl', async (req: ExpressRequest, res: ExpressResponse) => {
+router.delete('/:productId/images/:imageUrl', async (req: ExpressReq, res: ExpressRes) => {
   const { productId, imageUrl } = req.params;
 
   try {
     // 1. 刪除實際文件
-    const imagePath = pathUtil.join(__dirname, '../../../uploads', imageUrl);
+    const imagePath = pathUtil.join(__dirname, '../../../uploads',imageUrl);
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
     }
@@ -348,7 +375,10 @@ router.delete('/:productId/images/:imageUrl', async (req: ExpressRequest, res: E
     res.json({ message: 'Image deleted successfully' });
   } catch (error) {
     console.error('Error deleting image:', error);
-    res.status(500).json({ error: 'Failed to delete image' });
+    res.status(500).json({ 
+      error: 'Failed to delete image',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

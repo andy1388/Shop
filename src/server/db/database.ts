@@ -1,22 +1,39 @@
 const sqlite3 = require('sqlite3');
+const pathUtils = require('path');
 
-// 創建一個 IIFE (立即調用函數表達式) 來避免變量衝突
-const sqliteDb = (() => {
-  const db = new sqlite3.Database('shop.db', (err: Error | null) => {
-    if (err) {
-      console.error('Error opening database:', err);
-    } else {
-      console.log('Connected to SQLite database');
-      createTables();
-    }
-  });
+const dbPath = pathUtils.join(__dirname, '../../../shop.db');
 
-  const createTables = () => {
-    db.serialize(() => {
-      // 商品表
-      db.run(`
+type SQLiteError = Error & { code?: string };
+
+class Database {
+  private db: any;
+
+  constructor() {
+    this.db = new sqlite3.Database(dbPath, (err: SQLiteError | null) => {
+      if (err) {
+        console.error('Error opening database:', err);
+      } else {
+        console.log('Connected to SQLite database');
+        this.createTables();
+      }
+    });
+
+    process.on('SIGINT', () => {
+      this.close();
+    });
+  }
+
+  private createTables() {
+    this.db.serialize(() => {
+      // 先刪除舊表（如果存在）
+      this.db.run('DROP TABLE IF EXISTS product_images');
+      this.db.run('DROP TABLE IF EXISTS products');
+
+      // 重新創建表
+      this.db.run(`
         CREATE TABLE IF NOT EXISTS products (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sku TEXT,
           name TEXT NOT NULL,
           original_price DECIMAL(10,2) NOT NULL,
           special_price DECIMAL(10,2),
@@ -25,24 +42,51 @@ const sqliteDb = (() => {
           description TEXT,
           category TEXT NOT NULL,
           status TEXT DEFAULT 'active',
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          sales INTEGER DEFAULT 0
         )
-      `);
+      `, (err: SQLiteError | null) => {
+        if (err) {
+          console.error('Error creating products table:', err);
+        } else {
+          console.log('Products table created successfully');
+        }
+      });
 
-      // 商品圖片表
-      db.run(`
+      this.db.run(`
         CREATE TABLE IF NOT EXISTS product_images (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           product_id INTEGER,
           image_url TEXT NOT NULL,
           sort_order INTEGER,
-          FOREIGN KEY (product_id) REFERENCES products (id)
+          FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
         )
-      `);
+      `, (err: SQLiteError | null) => {
+        if (err) {
+          console.error('Error creating product_images table:', err);
+        } else {
+          console.log('Product_images table created successfully');
+        }
+      });
+
+      this.db.run('PRAGMA foreign_keys = ON');
     });
-  };
+  }
 
-  return db;
-})();
+  public get database() {
+    return this.db;
+  }
 
-module.exports = sqliteDb; 
+  private close() {
+    this.db.close((err: SQLiteError | null) => {
+      if (err) {
+        console.error('Error closing database:', err);
+      } else {
+        console.log('Database connection closed');
+      }
+      process.exit(0);
+    });
+  }
+}
+
+module.exports = new Database().database;

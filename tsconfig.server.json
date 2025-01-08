@@ -1,17 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es2017",
     "module": "commonjs",
-    "outDir": "./dist/server",
-    "rootDir": "./src/server",
+    "lib": ["es2017"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "noEmit": false
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/server/**/*"],
   "exclude": ["node_modules"]
