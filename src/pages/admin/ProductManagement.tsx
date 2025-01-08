@@ -7,9 +7,11 @@ import { toast } from 'react-hot-toast';
 
 interface Product {
   id: string;
+  sku: string;
   name: string;
   price: number;
   stock: number;
+  sales: number;
   status: 'active' | 'inactive';
   description: string;
   category: string;
@@ -17,9 +19,11 @@ interface Product {
   special_price?: number;
   special_price_end_date?: string;
   images?: string[];
+  created_at: string;
 }
 
 interface ProductFormData {
+  sku: string;
   name: string;
   originalPrice: string;
   specialPrice: string;
@@ -41,6 +45,7 @@ const CATEGORIES = [
 export const ProductManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
+    sku: '',
     name: '',
     originalPrice: '',
     specialPrice: '',
@@ -248,8 +253,8 @@ export const ProductManagement = () => {
   const handleEdit = async (product: Product) => {
     setEditingProduct(product);
     
-    // 設置基本表單數據
     setFormData({
+      sku: product.sku || '',
       name: product.name,
       originalPrice: product.original_price.toString(),
       specialPrice: product.special_price?.toString() || '',
@@ -257,7 +262,7 @@ export const ProductManagement = () => {
       stock: product.stock.toString(),
       description: product.description,
       category: product.category,
-      images: [] // 保持為空數組，因為我們不需要實際的 File 對象
+      images: []
     });
 
     // 如果有現有圖片，設置預覽 URL
@@ -312,6 +317,7 @@ export const ProductManagement = () => {
         setImagesToDelete([]); // 清空待刪除列表
         // 重置表單
         setFormData({
+          sku: '',
           name: '',
           originalPrice: '',
           specialPrice: '',
@@ -363,6 +369,7 @@ export const ProductManagement = () => {
     setEditingProduct(null);
     setImagesToDelete([]); // 清空待刪除列表
     setFormData({
+      sku: '',
       name: '',
       originalPrice: '',
       specialPrice: '',
@@ -418,6 +425,9 @@ export const ProductManagement = () => {
                 <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品圖片
                 </th>
+                <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  商品編號
+                </th>
                 <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品名稱
                 </th>
@@ -427,8 +437,14 @@ export const ProductManagement = () => {
                 <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   庫存
                 </th>
+                <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  銷量
+                </th>
                 <th className="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   分類
+                </th>
+                <th className="w-32 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  上架日期
                 </th>
                 <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   狀態
@@ -492,6 +508,9 @@ export const ProductManagement = () => {
                       )}
                     </div>
                   </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {product.sku || '-'}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="text-sm text-gray-900 truncate max-w-xs">
                       {product.name}
@@ -508,8 +527,20 @@ export const ProductManagement = () => {
                   <td className="px-4 py-3 text-center text-sm text-gray-900">
                     {product.stock}
                   </td>
+                  <td className="px-4 py-3 text-center text-sm text-gray-900">
+                    {product.sales || 0}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {CATEGORIES.find(cat => cat.id === product.category)?.name || product.category}
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm text-gray-900">
+                    {new Date(product.created_at).toLocaleDateString('zh-TW', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
