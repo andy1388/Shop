@@ -19,7 +19,7 @@ interface Product {
   special_price?: number;
   special_price_end_date?: string;
   images?: string[];
-  created_at: string;
+ created_at: string;
 }
 
 interface ProductFormData {
@@ -42,6 +42,10 @@ const CATEGORIES = [
   { id: 'lifestyle', name: '生活雜貨' },
 ] as const;
 
+// 添加排序類型
+type SortField = 'price' | 'stock' | 'sales' | 'created_at' | null;
+type SortOrder = 'asc' | 'desc';
+
 export const ProductManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
@@ -62,6 +66,8 @@ export const ProductManagement = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // 獲取商品列表
   const fetchProducts = async () => {
@@ -400,6 +406,61 @@ export const ProductManagement = () => {
     });
   };
 
+  // 修改排序圖標顯示函數
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '↕'; // 未排序狀態
+    return sortOrder === 'asc' ? '↑' : '↓';
+  };
+
+  // 修改排序處理函數
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // 如果點擊的是當前排序欄位，循環切換：升序 -> 降序 -> 取消排序
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        setSortField(null); // 取消排序
+      }
+    } else {
+      // 如果點擊的是新欄位，設置為升序
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 排序商品列表
+  const sortedProducts = [...products].sort((a, b) => {
+    if (!sortField) return 0;
+
+    let compareA, compareB;
+    switch (sortField) {
+      case 'price':
+        compareA = a.special_price || a.original_price;
+        compareB = b.special_price || b.original_price;
+        break;
+      case 'stock':
+        compareA = a.stock;
+        compareB = b.stock;
+        break;
+      case 'sales':
+        compareA = a.sales || 0;
+        compareB = b.sales || 0;
+        break;
+      case 'created_at':
+        compareA = new Date(a.created_at).getTime();
+        compareB = new Date(b.created_at).getTime();
+        break;
+      default:
+        return 0;
+    }
+
+    if (sortOrder === 'asc') {
+      return compareA > compareB ? 1 : -1;
+    } else {
+      return compareA < compareB ? 1 : -1;
+    }
+  });
+
   return (
     <div>
       {/* 頂部操作欄 */}
@@ -431,20 +492,44 @@ export const ProductManagement = () => {
                 <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品名稱
                 </th>
-                <th className="w-1/6 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th 
+                  onClick={() => handleSort('price')}
+                  className="w-1/6 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                >
                   價格
+                  <span className="ml-1 inline-block w-4">
+                    {getSortIcon('price')}
+                  </span>
                 </th>
-                <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th 
+                  onClick={() => handleSort('stock')}
+                  className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                >
                   庫存
+                  <span className="ml-1 inline-block w-4">
+                    {getSortIcon('stock')}
+                  </span>
                 </th>
-                <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th 
+                  onClick={() => handleSort('sales')}
+                  className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                >
                   銷量
+                  <span className="ml-1 inline-block w-4">
+                    {getSortIcon('sales')}
+                  </span>
                 </th>
                 <th className="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   分類
                 </th>
-                <th className="w-32 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th 
+                  onClick={() => handleSort('created_at')}
+                  className="w-32 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                >
                   上架日期
+                  <span className="ml-1 inline-block w-4">
+                    {getSortIcon('created_at')}
+                  </span>
                 </th>
                 <th className="w-20 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   狀態
@@ -455,7 +540,7 @@ export const ProductManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.map(product => (
+              {sortedProducts.map(product => (
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="relative w-48 h-48 group">
