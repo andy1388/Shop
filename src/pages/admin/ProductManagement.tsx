@@ -215,7 +215,7 @@ export const ProductManagement = () => {
 
   // 移除圖片
   const removeImage = (index: number) => {
-   if (editingProduct && editingProduct.images && editingProduct.images[index]) {
+    if (editingProduct && editingProduct.images && editingProduct.images[index]) {
       // 將要刪除的圖片添加到待刪除列表
       setImagesToDelete(prev => [...prev, editingProduct.images![index]]);
       
@@ -356,7 +356,7 @@ export const ProductManagement = () => {
     ));
   };
 
-  // 修改關閉模態框的處理
+  // 修改關閉模�框的處理
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
@@ -705,7 +705,7 @@ export const ProductManagement = () => {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={handleCloseModal}
+                  onClick={() => setIsModalOpen(false)}
                 >
                   取消
                 </Button>
