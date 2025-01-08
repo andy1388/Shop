@@ -409,6 +409,9 @@ export const ProductManagement = () => {
                   庫存
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  分類
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   狀態
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -450,6 +453,9 @@ export const ProductManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {product.stock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {CATEGORIES.find(cat => cat.id === product.category)?.name || product.category}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
