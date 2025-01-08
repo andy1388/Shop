@@ -55,6 +55,7 @@ export const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
   // 獲取商品列表
   const fetchProducts = async () => {
@@ -175,7 +176,7 @@ export const ProductManagement = () => {
 
   // 圖片拖放上傳
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    // 計算當前圖片總�
+    // 計算當前圖片總數
     const currentTotal = formData.images.length + acceptedFiles.length;
     
     if (currentTotal > 5) {
@@ -213,29 +214,24 @@ export const ProductManagement = () => {
   });
 
   // 移除圖片
-  const removeImage = async (index: number) => {
-    if (editingProduct && editingProduct.images && editingProduct.images[index]) {
-      try {
-        await productApi.deleteProductImage(editingProduct.id, editingProduct.images[index]);
-        
-        // 更新編輯產品的圖片列表
-        const updatedImages = [...(editingProduct.images || [])];
-        updatedImages.splice(index, 1);
-        setEditingProduct({
-          ...editingProduct,
-          images: updatedImages
-        });
-      } catch (error) {
-        console.error('Error deleting image:', error);
-        toast.error('刪除圖片失敗');
-        return;
-      }
+  const removeImage = (index: number) => {
+   if (editingProduct && editingProduct.images && editingProduct.images[index]) {
+      // 將要刪除的圖片添加到待刪除列表
+      setImagesToDelete(prev => [...prev, editingProduct.images![index]]);
+      
+      // 更新編輯產品的圖片列表（僅在 UI 上）
+      const updatedImages = [...(editingProduct.images || [])];
+      updatedImages.splice(index, 1);
+      setEditingProduct({
+        ...editingProduct,
+        images: updatedImages
+      });
     }
 
     // 更新預覽
     setPreviewUrls(prev => {
       const newUrls = [...prev];
-      URL.revokeObjectURL(newUrls[index]); // �放 URL 對象
+      URL.revokeObjectURL(newUrls[index]);
       newUrls.splice(index, 1);
       return newUrls;
     });
@@ -263,7 +259,7 @@ export const ProductManagement = () => {
       images: [] // 保持為空數組，因為我們不需要實際的 File 對象
     });
 
-    // 如果有現有圖片，設置�覽 URL
+    // 如果有現有圖片，設置預覽 URL
     if (product.images && product.images.length > 0) {
       const previewUrls = product.images.map(
         imageName => `http://localhost:3000/uploads/${imageName}`
@@ -293,12 +289,18 @@ export const ProductManagement = () => {
         return;
       }
 
+      // 如果是編輯模式且有要刪除的圖片
+      if (editingProduct && imagesToDelete.length > 0) {
+        // 刪除標記的圖片
+        for (const imageUrl of imagesToDelete) {
+          await productApi.deleteProductImage(editingProduct.id, imageUrl);
+        }
+      }
+
       let result;
       if (editingProduct) {
-        // 更新商品
         result = await productApi.updateProduct(editingProduct.id.toString(), formData);
       } else {
-        // 創建新商品
         result = await productApi.createProduct(formData);
       }
       
@@ -306,6 +308,7 @@ export const ProductManagement = () => {
         toast.success(editingProduct ? '商品更新成功！' : '商品上架成功！');
         setIsModalOpen(false);
         setEditingProduct(null);
+        setImagesToDelete([]); // 清空待刪除列表
         // 重置表單
         setFormData({
           name: '',
@@ -351,6 +354,24 @@ export const ProductManagement = () => {
         ? { ...product, status: product.status === 'active' ? 'inactive' : 'active' }
         : product
     ));
+  };
+
+  // 修改關閉模態框的處理
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+    setImagesToDelete([]); // 清空待刪除列表
+    setFormData({
+      name: '',
+      originalPrice: '',
+      specialPrice: '',
+      specialPriceEndDate: '',
+      stock: '',
+      description: '',
+      category: '',
+      images: []
+    });
+    setPreviewUrls([]);
   };
 
   return (
@@ -469,7 +490,7 @@ export const ProductManagement = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">{editingProduct ? '編輯商品' : '新增商品'}</h2>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
@@ -684,7 +705,7 @@ export const ProductManagement = () => {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                 >
                   取消
                 </Button>
