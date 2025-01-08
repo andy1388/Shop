@@ -175,10 +175,22 @@ export const ProductManagement = () => {
 
   // 圖片拖放上傳
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.slice(0, 5); // 最多5張
-    setFormData(prev => ({ ...prev, images: validFiles }));
-    handleImagePreview(validFiles);
-  }, []);
+    // 計算當前圖片總�
+    const currentTotal = formData.images.length + acceptedFiles.length;
+    
+    if (currentTotal > 5) {
+      toast.error('最多只能上傳5張圖片');
+      return;
+    }
+
+    // 合併現有圖片和新圖片
+    const newImages = [...formData.images, ...acceptedFiles];
+    setFormData(prev => ({ ...prev, images: newImages }));
+
+    // 處理新增圖片的預覽
+    const newPreviewUrls = acceptedFiles.map(file => URL.createObjectURL(file));
+    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  }, [formData.images]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -186,15 +198,25 @@ export const ProductManagement = () => {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif']
     },
     maxFiles: 5,
+    maxSize: 5242880, // 5MB
+    onDropRejected: (rejectedFiles) => {
+      if (rejectedFiles.some(file => file.file.size > 5242880)) {
+        toast.error('圖片大小不能超過5MB');
+      } else {
+        toast.error('請上傳有效的圖片文件');
+      }
+    },
+    onError: (error) => {
+      console.error('Dropzone error:', error);
+      toast.error('上傳圖片時發生錯誤');
+    }
   });
 
   // 移除圖片
   const removeImage = async (index: number) => {
     if (editingProduct && editingProduct.images && editingProduct.images[index]) {
-      // 如果是編輯模式，需要從服務器刪除圖片
       try {
-        // 這裡可以添加一個 API 調用來刪除特定圖片
-        // await productApi.deleteProductImage(editingProduct.id, editingProduct.images[index]);
+        await productApi.deleteProductImage(editingProduct.id, editingProduct.images[index]);
         
         // 更新編輯產品的圖片列表
         const updatedImages = [...(editingProduct.images || [])];
@@ -213,6 +235,7 @@ export const ProductManagement = () => {
     // 更新預覽
     setPreviewUrls(prev => {
       const newUrls = [...prev];
+      URL.revokeObjectURL(newUrls[index]); // �放 URL 對象
       newUrls.splice(index, 1);
       return newUrls;
     });

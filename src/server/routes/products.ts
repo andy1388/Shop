@@ -225,39 +225,84 @@ router.delete('/:id', async (req: ExpressRequest, res: ExpressResponse) => {
 });
 
 // 更新商品
-router.put('/:id', (req: CustomRequest, res: ExpressResponse) => {
+router.put('/:id', upload.array('images', 5), async (req: any, res: ExpressResponse) => {
   const { id } = req.params;
-  const {
-    name,
-    original_price,
-    special_price,
-    special_price_end_date,
-    stock,
-    description,
-    category
-  } = req.body;
+  try {
+    const {
+      name,
+      original_price,
+      special_price,
+      special_price_end_date,
+      stock,
+      description,
+      category
+    } = req.body;
 
-  dbInstance.run(
-    `UPDATE products SET 
-      name = ?, 
-      original_price = ?, 
-      special_price = ?, 
-      special_price_end_date = ?,
-      stock = ?, 
-      description = ?, 
-      category = ?
-    WHERE id = ?`,
-    [name, original_price, special_price, special_price_end_date, stock, description, category, id],
-    (err: Error | null) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
+    // 更新商品基本信息
+    await new Promise((resolve, reject) => {
+      dbInstance.run(
+        `UPDATE products SET 
+          name = ?, 
+          original_price = ?, 
+          special_price = ?, 
+          special_price_end_date = ?,
+          stock = ?, 
+          description = ?, 
+          category = ?
+        WHERE id = ?`,
+        [name, original_price, special_price, special_price_end_date, stock, description, category, id],
+        (err: Error | null) => {
+          if (err) reject(err);
+          else resolve(true);
+        }
+      );
+    });
+
+    // 處理新上傳的圖片
+    const files = req.files as Express.Multer.File[];
+    if (files && files.length > 0) {
+      // 獲取當前圖片數量
+      const currentImages = await new Promise<number>((resolve, reject) => {
+        dbInstance.get(
+          'SELECT COUNT(*) as count FROM product_images WHERE product_id = ?',
+          [id],
+          (err: Error | null, row: any) => {
+            if (err) reject(err);
+            else resolve(row.count);
+          }
+        );
+      });
+
+      // 檢查總圖片數是否超過限制
+      if (currentImages + files.length > 5) {
+        res.status(400).json({ error: '圖片總數不能超過5張' });
         return;
       }
-      res.json({
-        message: "Product updated successfully"
+
+      // 保存新圖片
+      const imageUrls = files.map(file => file.filename);
+      const placeholders = imageUrls.map(() => '(?, ?, ?)').join(',');
+      const values = imageUrls.flatMap((url, index) => [id, url, currentImages + index]);
+
+      await new Promise((resolve, reject) => {
+        dbInstance.run(
+          `INSERT INTO product_images (product_id, image_url, sort_order) VALUES ${placeholders}`,
+          values,
+          (err: Error | null) => {
+            if (err) reject(err);
+            else resolve(true);
+          }
+        );
       });
     }
-  );
+
+    res.json({
+      message: "Product updated successfully"
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
 });
 
 // 獲取商品圖片
