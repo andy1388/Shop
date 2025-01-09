@@ -29,6 +29,8 @@ type ExpressRes = import('express').Response;
 
 interface Product {
   id: number;
+  display_number: number;
+  sku: string;
   name: string;
   original_price: number;
   special_price?: number;
@@ -38,6 +40,7 @@ interface Product {
   category: string;
   status: string;
   created_at: string;
+  sales: number;
   images?: string;
 }
 
@@ -72,33 +75,36 @@ router.get('/', (_req: ExpressReq, res: ExpressRes) => {
   );
 });
 
+// 在創建商品時獲取最大的 display_number
+const getNextDisplayNumber = async () => {
+  return new Promise((resolve, reject) => {
+    dbInstance.get(
+      'SELECT MAX(display_number) as max_num FROM products',
+      [],
+      (err: Error | null, row: any) => {
+        if (err) reject(err);
+        else resolve((row.max_num || 0) + 1);
+      }
+    );
+  });
+};
+
 // 創建新商品（添加圖片上傳）
 router.post('/', upload.array('images', 5), async (req: any, res: ExpressRes) => {
   try {
-    const {
-      sku,
-      name,
-      original_price,
-      special_price,
-      special_price_end_date,
-      stock,
-      description,
-      category
-    } = req.body;
+    const nextNumber = await getNextDisplayNumber();
+    const productSku = `SKU${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
     console.log('Creating product with data:', {
-      sku,
-      name,
-      original_price,
-      special_price,
-      special_price_end_date,
-      stock,
-      description,
-      category
+      sku: productSku,
+      name: req.body.name,
+      original_price: req.body.original_price,
+      special_price: req.body.special_price,
+      special_price_end_date: req.body.special_price_end_date,
+      stock: req.body.stock,
+      description: req.body.description,
+      category: req.body.category
     });
-
-    // 如果沒有提供 SKU，生成一個隨機的 SKU
-    const productSku = sku || `SKU${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
     console.log('Received files:', req.files); // 添加日誌
 
@@ -112,19 +118,20 @@ router.post('/', upload.array('images', 5), async (req: any, res: ExpressRes) =>
     const result: any = await new Promise((resolve, reject) => {
       const sql = `
         INSERT INTO products (
-          sku, name, original_price, special_price, special_price_end_date,
+          display_number, sku, name, original_price, special_price, special_price_end_date,
           stock, description, category, status, sales
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const params = [
+        nextNumber,
         productSku,
-        name,
-        original_price,
-        special_price || null,
-        special_price_end_date || null,
-        stock,
-        description,
-        category,
+        req.body.name,
+        req.body.original_price,
+        req.body.special_price || null,
+        req.body.special_price_end_date || null,
+        req.body.stock,
+        req.body.description,
+        req.body.category,
         'active',
         0  // 初始銷量為 0
       ];

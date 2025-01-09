@@ -33,6 +33,7 @@ class Database {
       this.db.run(`
         CREATE TABLE IF NOT EXISTS products (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          display_number INTEGER,
           sku TEXT,
           name TEXT NOT NULL,
           original_price DECIMAL(10,2) NOT NULL,
@@ -70,6 +71,21 @@ class Database {
       });
 
       this.db.run('PRAGMA foreign_keys = ON');
+
+      // 添加一些測試數據
+      this.db.run(`
+        INSERT INTO products (
+          display_number, sku, name, original_price, stock, description, category
+        ) VALUES 
+        (1, 'SKU001', '測試商品1', 100, 10, '測試描述1', 'handmade'),
+        (2, 'SKU002', '測試商品2', 200, 20, '測試描述2', 'accessories')
+      `, (err: SQLiteError | null) => {
+        if (err) {
+          console.error('Error inserting test data:', err);
+        } else {
+          console.log('Test data inserted successfully');
+        }
+      });
     });
   }
 

@@ -19,7 +19,8 @@ interface Product {
   special_price?: number;
   special_price_end_date?: string;
   images?: string[];
- created_at: string;
+  created_at: string;
+  display_number: number;
 }
 
 interface ProductFormData {
@@ -72,7 +73,9 @@ export const ProductManagement = () => {
   // 獲取商品列表
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const data = await productApi.getProducts();
+      console.log('Fetched products:', data);  // 添加日誌
       setProducts(data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -487,7 +490,7 @@ export const ProductManagement = () => {
                   商品圖片
                 </th>
                 <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  商品編號
+                  編號
                 </th>
                 <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   商品名稱
@@ -594,7 +597,7 @@ export const ProductManagement = () => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {product.sku || '-'}
+                    {product.display_number}
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm text-gray-900 truncate max-w-xs">
